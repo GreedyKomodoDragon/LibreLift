@@ -2,9 +2,28 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 
 export default function NavigationBar() {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
+  const popupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    // Bind the event listener
+    document.addEventListener("mousedown", handleClickOutside);
+
+    // Unbind the event listener on cleanup
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   if (pathname === "/login") {
     return <></>;
@@ -33,18 +52,49 @@ export default function NavigationBar() {
             </Link>
           </nav>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 relative" ref={popupRef}>
           <input
             type="text"
             placeholder="Search"
             className="px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500"
           />
-          <Link
-            className="text-[#f8f9fa] text-sm font-medium bg-blue-500 px-3 py-2 rounded-md hover:bg-blue-600 transition duration-300"
-            href="/login"
-          >
-            Sign In
-          </Link>
+          <div className="relative">
+            <button
+              className="text-[#f8f9fa] text-sm font-medium bg-blue-500 px-3 py-2 rounded-md hover:bg-blue-600 transition duration-300"
+              onClick={() => setIsOpen(!isOpen)}
+            >
+              Sign In
+            </button>
+            {/* Popup */}
+            {isOpen && (
+              <div className="absolute z-50 mt-2 w-[200px] right-0 origin-top-right bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                <div className="py-1">
+                  {/* Your profile options */}
+                  <Link
+                    href="#"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Public Repositories
+                  </Link>
+                  <Link
+                    href="/profile/dashboard"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="#"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Settings
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </nav>

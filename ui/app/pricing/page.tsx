@@ -60,24 +60,24 @@ const PricingPage = () => {
 
       {/* Grid of subscription options */}
       <div className="flex flex-wrap justify-center">
-        <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
-        <ResourcePriceBox
-          title="1TB S3 Stand Storage"
-          pricing="$50 per Month"
-        />
-        <ResourcePriceBox
-          title="1TB S3 Stand Storage"
-          pricing="$50 per Month"
-        />
-        <ResourcePriceBox
-          title="1TB S3 Stand Storage"
-          pricing="$50 per Month"
-        />
-        <ResourcePriceBox
-          title="1TB S3 Stand Storage"
-          pricing="$50 per Month"
-        />
-        <ResourcePriceBox title="Daily Coffee" pricing="$50 per Month" />
+        <div className="sm:w-1/3">
+          <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
+        </div>
+        <div className="sm:w-1/3">
+          <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
+        </div>
+        <div className="sm:w-1/3">
+          <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
+        </div>
+        <div className="sm:w-1/3">
+          <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
+        </div>
+        <div className="sm:w-1/3">
+          <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
+        </div>
+        <div className="sm:w-1/3">
+          <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
+        </div>
       </div>
 
       <div className="flex justify-center mb-8">

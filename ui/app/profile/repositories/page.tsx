@@ -1,10 +1,11 @@
-import RepoRow from "@/components/RepoRow";
+import RepoBlock from "@/components/profile/RepoBlock";
 
+/* eslint-disable react/jsx-key */
 export default function Repostories() {
   return (
     <div className="p-4">
       <h3 className="font-semibold whitespace-nowrap tracking-tight text-4xl">
-        Your Repostories
+        Your Public Repostories
         {/* Refresh Icon will go here, will need a tooltip as well */}
         <button>
           <img
@@ -49,10 +50,7 @@ export default function Repostories() {
             </select>
           </div>
         </div>
-
-        <div className="flex flex-wrap justify-between">
-          <RepoRow />
-        </div>
+        <RepoBlock />
       </div>
     </div>
   );
