@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-export default function SearchRow() {
+export default function RepoRow() {
   return (
     <div className="w-full mb-4 zoom transition-transform duration-200 transform hover:scale-[1.005]">
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -12,6 +12,7 @@ export default function SearchRow() {
           <div>
             <p className="text-sm text-gray-500">Stars: 1000</p>
             <p className="text-sm text-gray-500">Last Update: 1000</p>
+            <p className="text-sm text-gray-500">Current Monthly Funding Total: $1000</p>
           </div>
           <div>
             <a
@@ -24,7 +25,7 @@ export default function SearchRow() {
                 alt="Github logo"
                 className="mr-2"
               />
-              View on Github
+              Import into LibreLift
             </a>
             <a
               href="#"
@@ -36,7 +37,7 @@ export default function SearchRow() {
                 alt="Github logo"
                 className="mr-2"
               />
-              View on LibreLift
+              Remove from LibreLift
             </a>
           </div>
         </div>

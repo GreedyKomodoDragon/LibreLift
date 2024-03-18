@@ -19,13 +19,13 @@ export default function NavigationBar() {
         }}
       >
         <div className="flex items-center space-x-4 mr-6">
-          <Link className="text-[#f8f9fa] text-lg font-semibold" href="#">
+          <Link className="text-[#f8f9fa] text-lg font-semibold" href="/">
             LibreLift
           </Link>
         </div>
         <div className="flex items-center justify-start flex-1">
           <nav className="flex items-center justify-start space-x-8">
-            <Link className="text-[#f8f9fa] font-semibold" href="#">
+            <Link className="text-[#f8f9fa] font-semibold" href="/pricing">
               Pricing
             </Link>
             <Link className="text-[#f8f9fa] font-semibold" href="#">
