@@ -3,15 +3,20 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function NavigationBar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+      if (
+        popupRef.current &&
+        !popupRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
@@ -61,7 +66,7 @@ export default function NavigationBar() {
           <div className="relative">
             <button
               className="text-[#f8f9fa] text-sm font-medium bg-blue-500 px-3 py-2 rounded-md hover:bg-blue-600 transition duration-300"
-              onClick={() => setIsOpen(!isOpen)}
+              onClick={() => router.push("/login")}
             >
               Sign In
             </button>

@@ -1,6 +1,17 @@
 /* eslint-disable @next/next/no-img-element */
+'use client'
+
+import { getToken } from "@/rest/auth";
+
+const REDIRECT_URI = 'http://localhost:3000/oauth/github/callback';
 
 export default function Login() {
+  const handleLogin = async () => {
+    const CLIENT_ID = await getToken()
+
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=user`;
+  };
+
   return (
     <div className="flex h-screen">
       <div className="absolute top-0 left-0 p-4">
@@ -17,9 +28,9 @@ export default function Login() {
           className="w-16 h-16 text-blue-600"
         >
           <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
             d="M12 6v6m0 0v6m0-6h6m-6 0H6"
           ></path>
         </svg>
@@ -32,8 +43,8 @@ export default function Login() {
             Currently we only support Github Logins
           </p>
           <a
-            href="#"
-            className="w-full mt-4 inline-flex items-center bg-gray-900 hover:bg-gray-700 text-white py-2 px-4 rounded-lg"
+            onClick={handleLogin}
+            className="cursor-pointer w-full mt-4 inline-flex items-center bg-gray-900 hover:bg-gray-700 text-white py-2 px-4 rounded-lg"
           >
             <img
               src={"/github-mark.svg"}
