@@ -14,7 +14,7 @@ func NewFiberHttpServer(authManager auth.AuthManager) *fiber.App {
 	})
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:3000",
+		AllowOrigins:     "http://127.0.0.1:3000",
 		AllowCredentials: true,
 	}))
 

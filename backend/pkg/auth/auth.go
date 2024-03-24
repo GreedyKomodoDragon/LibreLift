@@ -11,6 +11,7 @@ import (
 type AuthManager interface {
 	GetAccessToken(code string) (string, error)
 	IsValidAccessToken(token string) (bool, error)
+	GetImageURL(token string) (string, error)
 }
 
 type authManager struct {
@@ -64,4 +65,22 @@ func (a *authManager) IsValidAccessToken(token string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (a *authManager) GetImageURL(token string) (string, error) {
+	httpClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	))
+
+	client := github.NewClient(httpClient)
+	user, resp, err := client.Users.Get(context.Background(), "")
+	if err != nil {
+		if resp.StatusCode == http.StatusUnauthorized {
+			return "", nil
+		}
+
+		return "", err
+	}
+
+	return *user.AvatarURL, nil
 }

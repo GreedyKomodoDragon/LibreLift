@@ -2,6 +2,7 @@ package rest
 
 import (
 	"librelift/pkg/auth"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -21,14 +22,16 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 	authRouter := router.Group("/auth")
 
 	authRouter.Get("/login", func(c *fiber.Ctx) error {
-		token := c.Cookies("librelift-token")
-		if len(token) == 0 {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "unauthenticated, missing token",
-			})
+		// Get the Authorization header from the request
+		authHeader := c.Get("Authorization")
+
+		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
-		ok, err := authManager.IsValidAccessToken(token)
+		bearerToken := authHeader[len("Bearer "):]
+
+		ok, err := authManager.IsValidAccessToken(bearerToken)
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
@@ -60,6 +63,28 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"token": token,
+		})
+	})
+
+	authRouter.Get("/avatar", func(c *fiber.Ctx) error {
+		token := c.Cookies("librelift-token")
+		if len(token) == 0 {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "unauthenticated, missing token",
+			})
+		}
+
+		url, err := authManager.GetImageURL(token)
+		if err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if len(url) == 0 {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"avatar": url,
 		})
 	})
 }

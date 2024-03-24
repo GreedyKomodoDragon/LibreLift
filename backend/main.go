@@ -29,5 +29,5 @@ func main() {
 	app := rest.NewFiberHttpServer(authManager)
 
 	log.Info().Int("port", 8080).Msg("listening on port")
-	app.Listen(":8080")
+	app.Listen("127.0.0.1:8080")
 }
