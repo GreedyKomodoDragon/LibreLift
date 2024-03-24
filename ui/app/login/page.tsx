@@ -3,7 +3,7 @@
 
 import { getToken } from "@/rest/auth";
 
-const REDIRECT_URI = 'http://localhost:3000/oauth/github/callback';
+const REDIRECT_URI = 'http://127.0.0.1:3000/oauth/github/callback';
 
 export default function Login() {
   const handleLogin = async () => {

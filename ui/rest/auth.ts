@@ -1,16 +1,15 @@
 import axios from "axios";
 
 export async function getToken(): Promise<string> {
-    const config = await fetch('/config.json');
-    const jsConfig = await config.json()
+  const config = await fetch("/config.json");
+  const jsConfig = await config.json();
 
-    return jsConfig["GITHUB_CLIENT_TOKEN"]
+  return jsConfig["GITHUB_CLIENT_TOKEN"];
 }
-
 
 export async function login(code: string): Promise<string> {
   const result = await axios.post(
-    "http://localhost:8080/api/v1/auth/login",
+    "http://127.0.0.1:8080/api/v1/auth/login",
     {
       code: code,
     },
@@ -25,8 +24,19 @@ export async function login(code: string): Promise<string> {
   return result.data.token;
 }
 
+export async function getAvatarURL(): Promise<string> {
+  try {
+    const result = await axios.get("http://127.0.0.1:8080/api/v1/auth/avatar", {
+      withCredentials: true,
+    });
+    return result.data.avatar;
+  } catch (error) {
+    return "";
+  }
+}
+
 export async function isLoggedIn(): Promise<boolean> {
-  const result = await axios.get("http://localhost:8080/api/v1/auth/login", {
+  const result = await axios.get("http://127.0.0.1:8080/api/v1/auth/login", {
     withCredentials: true,
   });
 
