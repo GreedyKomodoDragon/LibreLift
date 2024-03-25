@@ -13,7 +13,8 @@ export default function Home() {
                 Help Fund Open Source Projects
               </h1>
               <p className="max-w-[600px] text-black md:text-xl dark:text-white mx-auto">
-                Join the Movement to Support Open Source Projects, search for your next project to lift up!
+                Join the Movement to Support Open Source Projects, search for
+                your next project to lift up!
               </p>
             </div>
             <Searchbar />

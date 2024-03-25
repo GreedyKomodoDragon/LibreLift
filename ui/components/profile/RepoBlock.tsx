@@ -3,17 +3,13 @@
 
 import { GetRepos } from "@/rest/github";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
 import RepoRow from "../RepoRow";
 import LoadingSpinner from "../LoadingSpinner";
 
 export default function RepoBlock() {
-  //in future this will be grabbed from your login
-  const [username, setUsername] = useState("GreedyKomodoDragon");
-
   const { isPending, error, data } = useQuery({
     queryKey: ["repoData"],
-    queryFn: () => GetRepos(username),
+    queryFn: () => GetRepos(),
   });
 
   return (
@@ -36,7 +32,7 @@ export default function RepoBlock() {
         !error &&
         data &&
         data.map((d) => (
-          <RepoRow name={d.full_name} description={d.description} />
+          <RepoRow name={d.name} description={d.description} />
         ))}
     </div>
   );

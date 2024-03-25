@@ -1,35 +1,31 @@
 "use client";
 
-import { SubmitHandler, useForm } from "@modular-forms/react";
 import { useRouter } from "next/navigation";
-
-type SearchForm = {
-  term: string;
-};
+import { FormEventHandler, useState } from "react";
 
 export default function Searchbar() {
-  const [_, { Form, Field }] = useForm<SearchForm>();
   const router = useRouter();
 
-  const goSearch: SubmitHandler<SearchForm> = (value, _) => {
-    router.push("/search?term=" + encodeURIComponent(value.term));
+  const [term, setTerm] = useState<string>("");
+
+  const goSearch: FormEventHandler<HTMLFormElement> = (event) => {
+    event.preventDefault()
+    
+    if (term.length > 0) {
+      router.push("/search?term=" + encodeURIComponent(term));
+    }
   };
 
   return (
     <div className="flex flex-col items-center">
       <div className="relative">
-        <Form onSubmit={goSearch}>
-          <Field name="term">
-            {(field, props) => (
-              <input
-                {...props}
-                id={field.name}
-                className="h-12 rounded-md border border-input bg-background px-3 py-3 text-lg ring-offset-background file:border-0 file:bg-transparent file:text-lg file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 flex-1 pr-10"
-                placeholder="Begin your search here!"
-                required
-              />
-            )}
-          </Field>
+        <form onSubmit={goSearch}>
+          <input
+            className="h-12 rounded-md border border-input bg-background px-3 py-3 text-lg ring-offset-background file:border-0 file:bg-transparent file:text-lg file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 flex-1 pr-10"
+            placeholder="Begin your search here!"
+            required
+            onChange={(event) => setTerm(event.currentTarget.value)}
+          />
           <button
             type="submit"
             className="absolute inset-y-0 right-0 flex items-center justify-center h-full whitespace-nowrap rounded-md text-lg font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground px-4 py-3"
@@ -50,7 +46,7 @@ export default function Searchbar() {
             </svg>
             <span className="sr-only">Search</span>
           </button>
-        </Form>
+        </form>
       </div>
     </div>
   );
