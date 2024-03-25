@@ -2,16 +2,18 @@ package rest
 
 import (
 	"librelift/pkg/auth"
+	"librelift/pkg/projects"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func addV1(app *fiber.App, authManager auth.AuthManager) {
+func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects.ProjectManager) {
 
 	router := app.Group("/api/v1")
 
 	addAuth(router, authManager)
+	addProject(router, projectManager)
 }
 
 type LoginReq struct {
@@ -85,6 +87,28 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"avatar": url,
+		})
+	})
+}
+
+func addProject(router fiber.Router, projectManager projects.ProjectManager) {
+	projectRouter := router.Group("/project")
+
+	projectRouter.Get("/repos", func(c *fiber.Ctx) error {
+		token := c.Cookies("librelift-token")
+		if len(token) == 0 {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "unauthenticated, missing token",
+			})
+		}
+
+		projects, err := projectManager.GetProjectsMetaData(token)
+		if err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"projects": projects,
 		})
 	})
 }

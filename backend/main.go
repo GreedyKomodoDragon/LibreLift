@@ -2,6 +2,7 @@ package main
 
 import (
 	"librelift/pkg/auth"
+	"librelift/pkg/projects"
 	"librelift/pkg/rest"
 	"os"
 
@@ -26,7 +27,8 @@ func main() {
 	}
 
 	authManager := auth.NewAuthManager(clientID, clientSecret)
-	app := rest.NewFiberHttpServer(authManager)
+	projectManager := projects.NewProjectManager()
+	app := rest.NewFiberHttpServer(authManager, projectManager)
 
 	log.Info().Int("port", 8080).Msg("listening on port")
 	app.Listen("127.0.0.1:8080")

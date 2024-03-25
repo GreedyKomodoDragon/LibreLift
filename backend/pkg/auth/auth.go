@@ -15,9 +15,8 @@ type AuthManager interface {
 }
 
 type authManager struct {
-	githClient *github.Client
-	config     oauth2.Config
-	clientID   string
+	config   oauth2.Config
+	clientID string
 }
 
 func NewAuthManager(clientID, clientSecret string) AuthManager {
@@ -31,12 +30,9 @@ func NewAuthManager(clientID, clientSecret string) AuthManager {
 		},
 	}
 
-	httpClient := config.Client(context.Background(), nil)
-
 	return &authManager{
-		githClient: github.NewClient(httpClient),
-		config:     config,
-		clientID:   clientID,
+		config:   config,
+		clientID: clientID,
 	}
 }
 
