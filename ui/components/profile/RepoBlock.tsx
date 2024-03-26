@@ -1,25 +1,26 @@
 /* eslint-disable react/jsx-key */
 "use client";
 
-import { GetRepos } from "@/rest/github";
-import { useQuery } from "@tanstack/react-query";
+import { Repo } from "@/rest/github";
 import RepoRow from "../RepoRow";
 import LoadingSpinner from "../LoadingSpinner";
 
-export default function RepoBlock() {
-  const { isPending, error, data } = useQuery({
-    queryKey: ["repoData"],
-    queryFn: () => GetRepos(),
-  });
+type RepoBlockProps = {
+  isPending: boolean;
+  error: Error | null;
+  data: Repo[];
+};
+
+export default function RepoBlock(props: RepoBlockProps) {
+  const { isPending, error, data } = props;
 
   return (
     <div className="flex flex-wrap justify-center">
       {isPending && (
         <div className="mt-4">
-          <LoadingSpinner />
+          <LoadingSpinner size={36} />
         </div>
       )}
-
       {error && (
         <div className="mt-10">
           <p className="text-3xl">
@@ -31,9 +32,7 @@ export default function RepoBlock() {
       {!isPending &&
         !error &&
         data &&
-        data.map((d) => (
-          <RepoRow name={d.name} description={d.description} />
-        ))}
+        data.map((d) => <RepoRow name={d.name} description={d.description} />)}
     </div>
   );
 }

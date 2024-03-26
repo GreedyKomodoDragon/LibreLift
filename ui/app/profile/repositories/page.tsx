@@ -1,7 +1,51 @@
+"use client";
+
+/* eslint-disable @next/next/no-img-element */
 import RepoBlock from "@/components/profile/RepoBlock";
+import { debounce } from "@/lib/utils";
+import { GetRepos, Repo } from "@/rest/github";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 /* eslint-disable react/jsx-key */
 export default function Repostories() {
+  const { isPending, error, data } = useQuery({
+    queryKey: ["repoData"],
+    queryFn: () => GetRepos(),
+  });
+
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [filtered, setFiltered] = useState<Repo[]>();
+
+  const debouncedFilterItems = debounce((term: string) => {
+    setSearchTerm(term);
+  }, 500); // Adjust delay time as needed
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value;
+    debouncedFilterItems(term);
+  };
+
+  const filteredItems = () => {
+    if (data === undefined || data.length === 0) {
+      return [];
+    }
+
+    if (searchTerm.length === 0) {
+      return data;
+    }
+
+    const lowerCasedTerm = searchTerm.toLowerCase();
+
+    return data.filter((item) => {
+      return item.name.toLowerCase().includes(lowerCasedTerm);
+    });
+  };
+
+  useEffect(() => {
+    setFiltered(filteredItems());
+  }, [searchTerm, data]);
+
   return (
     <div className="p-4">
       <h3 className="font-semibold whitespace-nowrap tracking-tight text-4xl">
@@ -22,11 +66,9 @@ export default function Repostories() {
             <input
               type="text"
               placeholder="Search Your Repostories..."
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 w-64"
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 w-80"
+              onChange={handleInputChange}
             />
-            <button className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-blue-500 focus:ring-offset-blue-200 focus:ring-2 focus:border-transparent">
-              Search
-            </button>
           </div>
 
           <div className="flex items-center">
@@ -50,7 +92,7 @@ export default function Repostories() {
             </select>
           </div>
         </div>
-        <RepoBlock />
+        <RepoBlock isPending={isPending} error={error} data={filtered || []} />
       </div>
     </div>
   );

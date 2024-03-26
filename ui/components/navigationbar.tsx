@@ -101,7 +101,7 @@ export default function NavigationBar() {
                 <div className="py-1">
                   {/* Your profile options */}
                   <Link
-                    href="#"
+                    href="/profile/repositories"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => setIsOpen(false)}
                   >
@@ -111,7 +111,6 @@ export default function NavigationBar() {
                     href="/profile/dashboard"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     onClick={() => {
-                      router.push("/profile/dashboard");
                       setIsOpen(false);
                     }}
                   >
