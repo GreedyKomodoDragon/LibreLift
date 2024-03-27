@@ -17,6 +17,7 @@ func NewFiberHttpServer(authManager auth.AuthManager, projectManager projects.Pr
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://127.0.0.1:3000",
 		AllowCredentials: true,
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH",
 	}))
 
 	app.Use(func(c *fiber.Ctx) error {

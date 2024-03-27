@@ -3,6 +3,7 @@ package rest
 import (
 	"librelift/pkg/auth"
 	"librelift/pkg/projects"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -70,12 +71,6 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 
 	authRouter.Get("/avatar", func(c *fiber.Ctx) error {
 		token := c.Cookies("librelift-token")
-		if len(token) == 0 {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "unauthenticated, missing token",
-			})
-		}
-
 		url, err := authManager.GetImageURL(token)
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
@@ -96,12 +91,6 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager) {
 
 	projectRouter.Get("/repos", func(c *fiber.Ctx) error {
 		token := c.Cookies("librelift-token")
-		if len(token) == 0 {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "unauthenticated, missing token",
-			})
-		}
-
 		projects, err := projectManager.GetProjectsMetaData(token)
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
@@ -110,5 +99,22 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager) {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"projects": projects,
 		})
+	})
+
+	projectRouter.Post("/repos/:id", func(c *fiber.Ctx) error {
+		token := c.Cookies("librelift-token")
+		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		if err := projectManager.AddingRepo(id, token); err != nil {
+			// TODO: Return code based on error
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": err.Error(),
+			})
+		}
+
+		return c.SendStatus(fiber.StatusAccepted)
 	})
 }

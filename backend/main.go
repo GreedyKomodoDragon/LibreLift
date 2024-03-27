@@ -2,6 +2,7 @@ package main
 
 import (
 	"librelift/pkg/auth"
+	"librelift/pkg/db"
 	"librelift/pkg/projects"
 	"librelift/pkg/rest"
 	"os"
@@ -27,7 +28,14 @@ func main() {
 	}
 
 	authManager := auth.NewAuthManager(clientID, clientSecret)
-	projectManager := projects.NewProjectManager()
+
+	pg, err := db.NewDBManager("postgres://myuser:mypassword@localhost:5432/mydatabase")
+	if err != nil {
+		panic(err)
+	}
+	defer pg.Close()
+
+	projectManager := projects.NewProjectManager(pg)
 	app := rest.NewFiberHttpServer(authManager, projectManager)
 
 	log.Info().Int("port", 8080).Msg("listening on port")
