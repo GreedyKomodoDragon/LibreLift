@@ -1,6 +1,7 @@
 import axios from "axios";
 
 export type Repo = {
+  id: number;
   name: string;
   description: string;
   add: boolean;
