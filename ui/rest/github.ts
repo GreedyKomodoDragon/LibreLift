@@ -4,7 +4,7 @@ export type Repo = {
   id: number;
   name: string;
   description: string;
-  add: boolean;
+  added: boolean;
 };
 
 export async function GetRepos(): Promise<Repo[]> {

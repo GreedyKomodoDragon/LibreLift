@@ -32,7 +32,7 @@ export default function RepoBlock(props: RepoBlockProps) {
       {!isPending &&
         !error &&
         data &&
-        data.map((d) => <RepoRow id={d.id} name={d.name} description={d.description} />)}
+        data.map((d) => <RepoRow id={d.id} name={d.name} description={d.description} added={d.added} />)}
     </div>
   );
 }
