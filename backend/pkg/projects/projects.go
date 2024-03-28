@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"librelift/pkg/db"
+	"sort"
 
 	"github.com/google/go-github/v60/github"
 	"golang.org/x/oauth2"
@@ -42,19 +43,69 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 		return nil, err
 	}
 
+	// TODO: Efficency improvements
+	// - Fetch Both all and Current at the same time
+	// - Might be worth storing all repos in the database to avoid doing two fetches -> How to maintain its up to date?
+	// - Cache results from Github to avoid longer waits -> decrease github throttling librelift
+	// - Could get client to fetch their own repos and then match the ids up -> client heavy though
 	opt := &github.RepositoryListByUserOptions{Type: "public"}
 	repos, _, err := client.Repositories.ListByUser(context.Background(), user.GetLogin(), opt)
 	if err != nil {
 		return nil, err
 	}
 
+	// Exit early as no repos
+	if len(repos) == 0 {
+		return []ProjectMetaData{}, nil
+	}
+
+	userRepos, err := p.repoDB.GetUsersRepos(*user.ID)
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(repos, func(i, j int) bool {
+		return *repos[i].ID < *repos[j].ID
+	})
+
 	projects := make([]ProjectMetaData, len(repos))
-	for i, repo := range repos {
+
+	// Initialize pointers
+	repoIndex, userRepoIndex := 0, 0
+
+	for i := 0; i < len(repos); i++ {
+		repo := repos[repoIndex]
+		userRepo := userRepos[userRepoIndex]
+
+		// Compare repo ID with userRepo ID
+		added := false
+		if *repo.ID == userRepo {
+			added = true
+			// Move userRepoIndex to the next element
+			userRepoIndex++
+		}
 
 		projects[i] = ProjectMetaData{
 			ID:          repo.ID,
 			Name:        repo.FullName,
 			Description: repo.Description,
+			Added:       added,
+		}
+
+		// Move repoIndex to the next element
+		repoIndex++
+
+		// Check if we reached the end of userRepos
+		if userRepoIndex >= len(userRepos) {
+			break
+		}
+	}
+
+	// If there are remaining repos, mark them as not added
+	for i := repoIndex; i < len(repos); i++ {
+		projects[i] = ProjectMetaData{
+			ID:          repos[i].ID,
+			Name:        repos[i].FullName,
+			Description: repos[i].Description,
 			Added:       false,
 		}
 	}
