@@ -5,6 +5,7 @@ import "librelift/pkg/db"
 type ProductsManager interface {
 	GetAllProducts() ([]db.Product, error)
 	GetRepoProducts(repoId int64) ([]db.RepoProduct, error)
+	AddProductToRepo(productId, repoId int64) error
 }
 
 type productsManager struct {
@@ -24,4 +25,8 @@ func (p *productsManager) GetAllProducts() ([]db.Product, error) {
 func (p *productsManager) GetRepoProducts(repoId int64) ([]db.RepoProduct, error) {
 	// Could be Inefficient if 1000's of products?
 	return p.dbManager.GetAllProductsForRepo(repoId)
+}
+
+func (p *productsManager) AddProductToRepo(productId, repoId int64) error {
+	return p.dbManager.AddProductToRepo(productId, repoId)
 }

@@ -17,7 +17,7 @@ func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects
 
 	addAuth(router, authManager)
 	addProject(router, projectManager)
-	addProducts(router, productManager)
+	addProducts(router, productManager, authManager)
 }
 
 type LoginReq struct {
@@ -122,7 +122,7 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager) {
 	})
 }
 
-func addProducts(router fiber.Router, productManager products.ProductsManager) {
+func addProducts(router fiber.Router, productManager products.ProductsManager, authManager auth.AuthManager) {
 	projectRouter := router.Group("/products")
 
 	projectRouter.Get("/", func(c *fiber.Ctx) error {
@@ -152,5 +152,35 @@ func addProducts(router fiber.Router, productManager products.ProductsManager) {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"products": products,
 		})
+	})
+
+	projectRouter.Post("/repo/:id/:pid", func(c *fiber.Ctx) error {
+		pid, err := strconv.ParseInt(c.Params("pid"), 10, 64)
+		if err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		token := c.Cookies("librelift-token")
+		ok, err := authManager.IsRepoOwner(token, id)
+		if err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if !ok {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"message": "must be owner",
+			})
+		}
+
+		if err := productManager.AddProductToRepo(pid, id); err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.SendStatus(fiber.StatusOK)
 	})
 }

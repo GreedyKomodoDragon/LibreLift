@@ -12,6 +12,7 @@ type DBManager interface {
 	GetUsersRepos(username int64) ([]int64, error)
 	GetAllProducts() ([]Product, error)
 	GetAllProductsForRepo(repoId int64) ([]RepoProduct, error)
+	AddProductToRepo(productId, repoId int64) error
 	// Used to close the client connection to the database
 	Close()
 }
@@ -21,12 +22,14 @@ type postgresManager struct {
 }
 
 type Product struct {
+	Id    int64  `json:"id"`
 	Name  string `json:"name"`
 	URL   string `json:"url"`
 	Price int32  `json:"price"`
 }
 
 type RepoProduct struct {
+	Id      int64  `json:"id"`
 	Name    string `json:"name"`
 	URL     string `json:"url"`
 	Price   int32  `json:"price"`
@@ -88,7 +91,7 @@ func (p *postgresManager) GetUsersRepos(username int64) ([]int64, error) {
 
 func (p *postgresManager) GetAllProducts() ([]Product, error) {
 
-	results, err := p.conn.Query(context.Background(), "SELECT products.prod_name, products.url, products.price FROM products")
+	results, err := p.conn.Query(context.Background(), "SELECT products.prod_name, products.url, products.price, products.id FROM products")
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +113,7 @@ func (p *postgresManager) GetAllProductsForRepo(repoId int64) ([]RepoProduct, er
         	WHEN products.id in (select product_id from repo_products where repo_id = $1) THEN true 
         	ELSE false 
     	END AS isSelected, 
-		prod_name, url, price
+		prod_name, url, price, id
 	FROM products;
 	`, repoId)
 
@@ -136,7 +139,7 @@ func (p *postgresManager) convertRowsToProduct(results pgx.Rows) (*[]Product, er
 			return nil, err
 		}
 
-		if len(anySlice) != 3 {
+		if len(anySlice) != 4 {
 			return nil, fmt.Errorf("invalid row structure returned")
 		}
 
@@ -155,7 +158,13 @@ func (p *postgresManager) convertRowsToProduct(results pgx.Rows) (*[]Product, er
 			return nil, fmt.Errorf("invalid row structure returned, on third column")
 		}
 
+		id, ok := anySlice[3].(int64)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on fourth column")
+		}
+
 		products = append(products, Product{
+			Id:    id,
 			Name:  name,
 			URL:   url,
 			Price: price,
@@ -175,7 +184,7 @@ func (p *postgresManager) convertRowsToRepoProduct(results pgx.Rows) (*[]RepoPro
 			return nil, err
 		}
 
-		if len(anySlice) != 4 {
+		if len(anySlice) != 5 {
 			return nil, fmt.Errorf("invalid row structure returned")
 		}
 
@@ -199,7 +208,13 @@ func (p *postgresManager) convertRowsToRepoProduct(results pgx.Rows) (*[]RepoPro
 			return nil, fmt.Errorf("invalid row structure returned, on fourth column")
 		}
 
+		id, ok := anySlice[4].(int64)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on 5th column")
+		}
+
 		products = append(products, RepoProduct{
+			Id:      id,
 			IsAdded: isAdded,
 			Name:    name,
 			URL:     url,
@@ -209,4 +224,9 @@ func (p *postgresManager) convertRowsToRepoProduct(results pgx.Rows) (*[]RepoPro
 	}
 
 	return &products, nil
+}
+
+func (p *postgresManager) AddProductToRepo(productId, repoId int64) error {
+	_, err := p.conn.Exec(context.Background(), "INSERT into repo_products values ($1, $2);", repoId, productId)
+	return err
 }

@@ -12,6 +12,7 @@ type AuthManager interface {
 	GetAccessToken(code string) (string, error)
 	IsValidAccessToken(token string) (bool, error)
 	GetImageURL(token string) (string, error)
+	IsRepoOwner(token string, repoId int64) (bool, error)
 }
 
 type authManager struct {
@@ -79,4 +80,24 @@ func (a *authManager) GetImageURL(token string) (string, error) {
 	}
 
 	return *user.AvatarURL, nil
+}
+
+func (a *authManager) IsRepoOwner(token string, repoId int64) (bool, error) {
+	httpClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	))
+
+	client := github.NewClient(httpClient)
+
+	repo, _, err := client.Repositories.GetByID(context.Background(), repoId)
+	if err != nil {
+		return false, err
+	}
+
+	user, _, err := client.Users.Get(context.Background(), "")
+	if err != nil {
+		return false, err
+	}
+
+	return *repo.Owner.ID == *user.ID, nil
 }
