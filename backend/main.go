@@ -3,6 +3,7 @@ package main
 import (
 	"librelift/pkg/auth"
 	"librelift/pkg/db"
+	"librelift/pkg/products"
 	"librelift/pkg/projects"
 	"librelift/pkg/rest"
 	"os"
@@ -36,7 +37,8 @@ func main() {
 	defer pg.Close()
 
 	projectManager := projects.NewProjectManager(pg)
-	app := rest.NewFiberHttpServer(authManager, projectManager)
+	productManager := products.NewProductManager(pg)
+	app := rest.NewFiberHttpServer(authManager, projectManager, productManager)
 
 	log.Info().Int("port", 8080).Msg("listening on port")
 	app.Listen("127.0.0.1:8080")

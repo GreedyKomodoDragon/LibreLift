@@ -2,19 +2,22 @@ package rest
 
 import (
 	"librelift/pkg/auth"
+	"librelift/pkg/products"
 	"librelift/pkg/projects"
 	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/rs/zerolog/log"
 )
 
-func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects.ProjectManager) {
+func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects.ProjectManager, productManager products.ProductsManager) {
 
 	router := app.Group("/api/v1")
 
 	addAuth(router, authManager)
 	addProject(router, projectManager)
+	addProducts(router, productManager)
 }
 
 type LoginReq struct {
@@ -116,5 +119,38 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager) {
 		}
 
 		return c.SendStatus(fiber.StatusAccepted)
+	})
+}
+
+func addProducts(router fiber.Router, productManager products.ProductsManager) {
+	projectRouter := router.Group("/products")
+
+	projectRouter.Get("/", func(c *fiber.Ctx) error {
+		products, err := productManager.GetAllProducts()
+		if err != nil {
+			log.Error().Err(err).Msg("failed to get all products")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"products": products,
+		})
+	})
+
+	projectRouter.Get("/repo/:id", func(c *fiber.Ctx) error {
+		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		products, err := productManager.GetRepoProducts(id)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to get all products")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"products": products,
+		})
 	})
 }

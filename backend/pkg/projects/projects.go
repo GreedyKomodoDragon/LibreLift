@@ -72,7 +72,7 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 	// Initialize pointers
 	repoIndex, userRepoIndex := 0, 0
 
-	for i := 0; i < len(repos); i++ {
+	for i := 0; i < len(userRepos); i++ {
 		repo := repos[repoIndex]
 		userRepo := userRepos[userRepoIndex]
 
