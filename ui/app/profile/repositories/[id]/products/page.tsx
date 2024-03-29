@@ -5,7 +5,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import ProductGroupButton from "@/components/profile/ProductGroupButton";
 import ResourcePriceBox from "@/components/resourcePriceBox";
 import Searchbar from "@/components/searchbar";
-import { getRepoProducts } from "@/rest/products";
+import { addProductToRepo, getRepoProducts } from "@/rest/products";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -63,6 +63,16 @@ export default function Page({ params }: { params: { id: string } }) {
                         title={d.name}
                         pricing={`$${d.price / 100} per Month`}
                         url={d.url}
+                        option={true}
+                        added={d.isAdded}
+                        onAddClick={() => {
+                          try {
+                            addProductToRepo(d.id, Number(params.id))
+                          } catch (error) {
+                            console.log(error)
+                          }
+                          
+                        }}
                       />
                     </div>
                   ))}
