@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AddRepoDialog } from "./dialog";
 import { AddRepoToLibrelift } from "@/rest/repos";
+import Link from "next/link";
 
 type RepoRow = {
   name: string;
@@ -13,15 +14,16 @@ type RepoRow = {
 
 export default function RepoRow(props: RepoRow) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [added, setAdded] = useState(false);
 
   const add = async () => {
     try {
       const ok = await AddRepoToLibrelift(props.id);
-      if (!ok) {
-        console.log("something went wrong!");
+      if (ok) {
+        setAdded(ok);
       }
     } catch (error) {
-      console.log("something went wrong with error!");
+      console.error("Unable to add");
     }
   };
 
@@ -40,19 +42,33 @@ export default function RepoRow(props: RepoRow) {
               </p>
             </div>
             <div>
-              {props.added ? (
-                <a
-                  href="#"
-                  className="inline-flex items-center bg-blue-900 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
-                >
-                  <img
-                    src={"/logo.svg"}
-                    style={{ height: 40, width: 40 }}
-                    alt="Github logo"
-                    className="mr-2"
-                  />
-                  Remove from LibreLift
-                </a>
+              {props.added || added ? (
+                <>
+                  <Link
+                    href={`/profile/repositories/${props.id}/products`}
+                    className="mr-2 inline-flex items-center bg-blue-900 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
+                  >
+                    Product List
+                    <img
+                      src={"/logo.svg"}
+                      style={{ height: 40, width: 40 }}
+                      alt="Github logo"
+                      className="ml-2"
+                    />
+                  </Link>
+                  <a
+                    href="#"
+                    className="inline-flex items-center bg-blue-900 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
+                  >
+                    To Dashboard
+                    <img
+                      src={"/logo.svg"}
+                      style={{ height: 40, width: 40 }}
+                      alt="Github logo"
+                      className="ml-2"
+                    />
+                  </a>
+                </>
               ) : (
                 <button
                   className="inline-flex items-center bg-gray-900 hover:bg-gray-700 text-white py-2 px-4 rounded-lg mr-1"

@@ -61,22 +61,46 @@ const PricingPage = () => {
       {/* Grid of subscription options */}
       <div className="flex flex-wrap justify-center">
         <div className="sm:w-1/3">
-          <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
+          <ResourcePriceBox
+            title="EC2 Instance"
+            pricing="$50 per Month"
+            url={"/ec2.svg"}
+          />
         </div>
         <div className="sm:w-1/3">
-          <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
+          <ResourcePriceBox
+            title="EC2 Instance"
+            pricing="$50 per Month"
+            url={"/ec2.svg"}
+          />
         </div>
         <div className="sm:w-1/3">
-          <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
+          <ResourcePriceBox
+            title="EC2 Instance"
+            pricing="$50 per Month"
+            url={"/ec2.svg"}
+          />
         </div>
         <div className="sm:w-1/3">
-          <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
+          <ResourcePriceBox
+            title="EC2 Instance"
+            pricing="$50 per Month"
+            url={"/ec2.svg"}
+          />
         </div>
         <div className="sm:w-1/3">
-          <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
+          <ResourcePriceBox
+            title="EC2 Instance"
+            pricing="$50 per Month"
+            url={"/ec2.svg"}
+          />
         </div>
         <div className="sm:w-1/3">
-          <ResourcePriceBox title="EC2 Instance" pricing="$50 per Month" />
+          <ResourcePriceBox
+            title="EC2 Instance"
+            pricing="$50 per Month"
+            url={"/ec2.svg"}
+          />
         </div>
       </div>
 

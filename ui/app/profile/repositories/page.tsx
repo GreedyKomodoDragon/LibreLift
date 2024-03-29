@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 /* eslint-disable react/jsx-key */
 export default function Repostories() {
   const { isPending, error, data } = useQuery({
+    refetchInterval: 0,
     queryKey: ["repoData"],
     queryFn: () => GetRepos(),
   });
