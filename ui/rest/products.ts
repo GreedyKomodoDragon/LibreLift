@@ -34,6 +34,17 @@ export async function getRepoProducts(repoId: string): Promise<RepoProduct[]> {
   return result.data.products;
 }
 
+export async function getRepoOptions(repoId: string): Promise<RepoProduct[]> {
+  const result = await axios.get(
+    `http://127.0.0.1:8080/api/v1/products/repo/${repoId}/added`,
+    {
+      withCredentials: true,
+    }
+  );
+
+  return result.data.products;
+}
+
 export async function addProductToRepo(productId: number, repoId: number) {
   axios.post(
     `http://127.0.0.1:8080/api/v1/products/repo/${repoId}/${productId}`,
