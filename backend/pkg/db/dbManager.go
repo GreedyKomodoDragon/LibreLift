@@ -13,6 +13,7 @@ type DBManager interface {
 	GetAllProducts() ([]Product, error)
 	GetAllProductsForRepo(repoId int64) ([]RepoProduct, error)
 	AddProductToRepo(productId, repoId int64) error
+	GetRepoOptions(repoId int64) ([]RepoOption, error)
 	// Used to close the client connection to the database
 	Close()
 }
@@ -34,6 +35,13 @@ type RepoProduct struct {
 	URL     string `json:"url"`
 	Price   int32  `json:"price"`
 	IsAdded bool   `json:"isAdded"`
+}
+
+type RepoOption struct {
+	Id    int64  `json:"id"`
+	Name  string `json:"name"`
+	URL   string `json:"url"`
+	Price int32  `json:"price"`
 }
 
 func NewDBManager(connectionURL string) (DBManager, error) {
@@ -229,4 +237,69 @@ func (p *postgresManager) convertRowsToRepoProduct(results pgx.Rows) (*[]RepoPro
 func (p *postgresManager) AddProductToRepo(productId, repoId int64) error {
 	_, err := p.conn.Exec(context.Background(), "INSERT into repo_products values ($1, $2);", repoId, productId)
 	return err
+}
+
+func (p *postgresManager) GetRepoOptions(repoId int64) ([]RepoOption, error) {
+	results, err := p.conn.Query(context.Background(), `
+	SELECT id, prod_name, url, price
+	FROM products
+	WHERE products.id in (select product_id from repo_products where repo_id = $1);
+	`, repoId)
+
+	if err != nil {
+		return nil, err
+	}
+	defer results.Close()
+
+	products, err := p.convertRowsToRepoOption(results)
+	if err != nil {
+		return nil, err
+	}
+
+	return *products, err
+}
+
+func (p *postgresManager) convertRowsToRepoOption(results pgx.Rows) (*[]RepoOption, error) {
+	products := []RepoOption{}
+
+	for results.Next() {
+		anySlice, err := results.Values()
+		if err != nil {
+			return nil, err
+		}
+
+		if len(anySlice) != 4 {
+			return nil, fmt.Errorf("invalid row structure returned")
+		}
+
+		id, ok := anySlice[0].(int64)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on id column")
+		}
+
+		name, ok := anySlice[1].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on second column")
+		}
+
+		url, ok := anySlice[2].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on third column")
+		}
+
+		price, ok := anySlice[3].(int32)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on fourth column")
+		}
+
+		products = append(products, RepoOption{
+			Id:    id,
+			Name:  name,
+			URL:   url,
+			Price: price,
+		})
+
+	}
+
+	return &products, nil
 }

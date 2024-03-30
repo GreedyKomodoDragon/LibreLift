@@ -13,10 +13,16 @@ import (
 type ProjectManager interface {
 	GetProjectsMetaData(string) ([]ProjectMetaData, error)
 	AddingRepo(id int64, token string) error
+	GetProjectMetaData(id int64, token string) (*BasicRepoMetaData, error)
 }
 
 type projectManager struct {
 	repoDB db.DBManager
+}
+
+type BasicRepoMetaData struct {
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
 }
 
 type ProjectMetaData struct {
@@ -134,4 +140,22 @@ func (p *projectManager) AddingRepo(id int64, token string) error {
 	}
 
 	return p.repoDB.AddRepo(*repo.Owner.ID, *repo.ID)
+}
+
+func (p *projectManager) GetProjectMetaData(id int64, token string) (*BasicRepoMetaData, error) {
+	httpClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	))
+
+	client := github.NewClient(httpClient)
+
+	repo, _, err := client.Repositories.GetByID(context.Background(), id)
+	if err != nil {
+		return nil, fmt.Errorf("Error fetching repository: %v", id)
+	}
+
+	return &BasicRepoMetaData{
+		Name:        repo.FullName,
+		Description: repo.Description,
+	}, nil
 }

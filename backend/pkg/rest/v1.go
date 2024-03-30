@@ -104,6 +104,22 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager) {
 		})
 	})
 
+	projectRouter.Get("/repos/:id", func(c *fiber.Ctx) error {
+		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		token := c.Cookies("librelift-token")
+
+		project, err := projectManager.GetProjectMetaData(id, token)
+		if err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(*project)
+	})
+
 	projectRouter.Post("/repos/:id", func(c *fiber.Ctx) error {
 		token := c.Cookies("librelift-token")
 		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
@@ -144,6 +160,23 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 		}
 
 		products, err := productManager.GetRepoProducts(id)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to get all products")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"products": products,
+		})
+	})
+
+	projectRouter.Get("/repo/:id/added", func(c *fiber.Ctx) error {
+		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		products, err := productManager.GetReposOptions(id)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to get all products")
 			return c.SendStatus(fiber.StatusInternalServerError)
