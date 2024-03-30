@@ -72,7 +72,7 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 	// Initialize pointers
 	repoIndex, userRepoIndex := 0, 0
 
-	for i := 0; i < len(userRepos); i++ {
+	for userRepoIndex < len(userRepos) {
 		repo := repos[repoIndex]
 		userRepo := userRepos[userRepoIndex]
 
@@ -84,7 +84,7 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 			userRepoIndex++
 		}
 
-		projects[i] = ProjectMetaData{
+		projects[repoIndex] = ProjectMetaData{
 			ID:          repo.ID,
 			Name:        repo.FullName,
 			Description: repo.Description,
@@ -94,8 +94,7 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 		// Move repoIndex to the next element
 		repoIndex++
 
-		// Check if we reached the end of userRepos
-		if userRepoIndex >= len(userRepos) {
+		if repoIndex >= len(repos) {
 			break
 		}
 	}
