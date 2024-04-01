@@ -4,6 +4,7 @@ import (
 	"librelift/pkg/auth"
 	"librelift/pkg/products"
 	"librelift/pkg/projects"
+	"librelift/pkg/search"
 	"strconv"
 	"strings"
 
@@ -11,12 +12,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects.ProjectManager, productManager products.ProductsManager) {
+func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects.ProjectManager, productManager products.ProductsManager, searchManager search.SearchManager) {
 
 	router := app.Group("/api/v1")
 
 	addAuth(router, authManager)
-	addProject(router, projectManager)
+	addProject(router, projectManager, searchManager)
 	addProducts(router, productManager, authManager)
 }
 
@@ -89,7 +90,7 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 	})
 }
 
-func addProject(router fiber.Router, projectManager projects.ProjectManager) {
+func addProject(router fiber.Router, projectManager projects.ProjectManager, searchManager search.SearchManager) {
 	projectRouter := router.Group("/project")
 
 	projectRouter.Get("/repos", func(c *fiber.Ctx) error {
@@ -127,10 +128,26 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager) {
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
+		repo, err := projectManager.GetProjectMetaData(id, token)
+		if err != nil {
+			// TODO: Return code based on error
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "failed to get project information",
+			})
+		}
+
 		if err := projectManager.AddingRepo(id, token); err != nil {
 			// TODO: Return code based on error
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"error": err.Error(),
+				"error": "failed to add repo to librelift",
+			})
+		}
+
+		if _, err := searchManager.CreateSearchDocument(id, *repo.Name, *repo.Description); err != nil {
+			// TODO: Move to another service that can handle re-tries
+			log.Error().Int64("repoID", id).Msg("failed to create search index")
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "failed to create search index",
 			})
 		}
 

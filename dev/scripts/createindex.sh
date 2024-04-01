@@ -1,0 +1,1 @@
+curl -X PUT "https://localhost:9200/librelift?pretty" --cacert ./certs/ca/ca.crt --insecure -u elastic

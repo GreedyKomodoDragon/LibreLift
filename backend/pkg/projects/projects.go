@@ -154,8 +154,15 @@ func (p *projectManager) GetProjectMetaData(id int64, token string) (*BasicRepoM
 		return nil, fmt.Errorf("Error fetching repository: %v", id)
 	}
 
-	return &BasicRepoMetaData{
+	repoMeta := &BasicRepoMetaData{
 		Name:        repo.FullName,
 		Description: repo.Description,
-	}, nil
+	}
+
+	if repoMeta.Description == nil {
+		empty := ""
+		repoMeta.Description = &empty
+	}
+
+	return repoMeta, nil
 }

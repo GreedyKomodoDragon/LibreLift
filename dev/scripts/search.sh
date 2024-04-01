@@ -1,0 +1,1 @@
+curl --cacert ./certs/ca/ca.crt --insecure -u elastic https://localhost:9200/librelift/_search?pretty=true

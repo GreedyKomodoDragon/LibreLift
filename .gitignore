@@ -1,2 +1,5 @@
 .env
 dev/data
+dev/certs
+dev/esdata01
+dev/kibanadata
