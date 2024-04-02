@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AddRepoDialog } from "./dialog";
 import { AddRepoToLibrelift } from "@/rest/repos";
 import Link from "next/link";
+import LoadingSpinner from "./LoadingSpinner";
 
 type RepoRow = {
   name: string;
@@ -15,8 +16,10 @@ type RepoRow = {
 export default function RepoRow(props: RepoRow) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [added, setAdded] = useState(false);
+  const [isPending, setIsPending] = useState(false);
 
   const add = async () => {
+    setIsPending(true);
     try {
       const ok = await AddRepoToLibrelift(props.id);
       if (ok) {
@@ -25,6 +28,7 @@ export default function RepoRow(props: RepoRow) {
     } catch (error) {
       console.error("Unable to add");
     }
+    setIsPending(false);
   };
 
   return (
@@ -42,7 +46,9 @@ export default function RepoRow(props: RepoRow) {
               </p>
             </div>
             <div>
-              {props.added || added ? (
+              {isPending ? (
+                <LoadingSpinner size={16} />
+              ) : props.added || added ? (
                 <>
                   <Link
                     href={`/profile/repositories/${props.id}/products`}
