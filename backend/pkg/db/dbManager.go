@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/rs/zerolog/log"
 )
 
 type DBManager interface {
@@ -70,8 +71,10 @@ func (p *postgresManager) GetUsersRepos(username int64) ([]int64, error) {
 
 	results, err := p.conn.Query(context.Background(), "SELECT get_all_repo_ids_for_user($1)", username)
 	if err != nil {
+		log.Error().Int64("username", username).Err(err).Msg("failed to run GetUsersRepos query")
 		return nil, err
 	}
+
 	defer results.Close()
 
 	// check if there is any
@@ -79,6 +82,7 @@ func (p *postgresManager) GetUsersRepos(username int64) ([]int64, error) {
 	for results.Next() {
 		anySlice, err := results.Values()
 		if err != nil {
+			log.Error().Err(err).Msg("failed to run get values")
 			return nil, err
 		}
 

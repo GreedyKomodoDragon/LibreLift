@@ -2,13 +2,18 @@ package search
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/operator"
+	"github.com/rs/zerolog/log"
 )
 
 type SearchManager interface {
 	CreateSearchDocument(int64, string, string) (string, error)
-	SearchUsingTerm(string) error
+	Search(string) ([]SearchDocument, error)
 }
 
 type elasticsearchManager struct {
@@ -44,6 +49,36 @@ func (e *elasticsearchManager) CreateSearchDocument(id int64, name string, descr
 }
 
 // SearchUsingTerm implements SearchManager.
-func (e *elasticsearchManager) SearchUsingTerm(string) error {
-	panic("unimplemented")
+func (e *elasticsearchManager) Search(query string) ([]SearchDocument, error) {
+	lenient := true
+	queryM := map[string]types.MatchQuery{
+		"name": {
+			Query:     query,
+			Lenient:   &lenient,
+			Operator:  &operator.Or,
+			Fuzziness: "AUTO",
+		},
+	}
+
+	repo, err := e.client.Search().Index("librelift").
+		Request(&search.Request{
+			Query: &types.Query{Match: queryM},
+		}).
+		Do(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	documents := []SearchDocument{}
+	for _, hit := range repo.Hits.Hits {
+		var document SearchDocument
+		if err := json.Unmarshal(hit.Source_, &document); err != nil {
+			log.Err(err).Msg("failed to Unmarshal search document from elasticsearch")
+			continue
+		}
+
+		documents = append(documents, document)
+	}
+
+	return documents, nil
 }

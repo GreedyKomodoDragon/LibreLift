@@ -19,6 +19,7 @@ func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects
 	addAuth(router, authManager)
 	addProject(router, projectManager, searchManager)
 	addProducts(router, productManager, authManager)
+	addSearch(router, searchManager)
 }
 
 type LoginReq struct {
@@ -232,5 +233,27 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 		}
 
 		return c.SendStatus(fiber.StatusOK)
+	})
+}
+
+func addSearch(router fiber.Router, searchManager search.SearchManager) {
+	searchRouter := router.Group("/search")
+
+	searchRouter.Get("/projects", func(c *fiber.Ctx) error {
+		query := c.Query("query")
+		if query == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": "missing query parameter: 'query'",
+			})
+		}
+
+		documents, err := searchManager.Search(query)
+		if err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"results": documents,
+		})
 	})
 }
