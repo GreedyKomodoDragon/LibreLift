@@ -51,18 +51,16 @@ func (e *elasticsearchManager) CreateSearchDocument(id int64, name string, descr
 // SearchUsingTerm implements SearchManager.
 func (e *elasticsearchManager) Search(query string) ([]SearchDocument, error) {
 	lenient := true
-	queryM := map[string]types.MatchQuery{
-		"name": {
-			Query:     query,
-			Lenient:   &lenient,
-			Operator:  &operator.Or,
-			Fuzziness: "AUTO",
-		},
-	}
 
 	repo, err := e.client.Search().Index("librelift").
 		Request(&search.Request{
-			Query: &types.Query{Match: queryM},
+			Query: &types.Query{MultiMatch: &types.MultiMatchQuery{
+				Query:     query,
+				Lenient:   &lenient,
+				Operator:  &operator.Or,
+				Fuzziness: "AUTO",
+				Fields:    []string{"name", "description"},
+			}},
 		}).
 		Do(context.TODO())
 	if err != nil {
