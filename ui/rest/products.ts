@@ -7,7 +7,7 @@ type Product = {
   price: number;
 };
 
-type RepoProduct = {
+export type RepoProduct = {
   id: number;
   name: string;
   url: string;
@@ -46,7 +46,8 @@ export async function getRepoOptions(repoId: string): Promise<RepoProduct[]> {
 }
 
 export async function addProductToRepo(productId: number, repoId: number) {
-  axios.post(
+  console.log("here")
+  await axios.post(
     `http://127.0.0.1:8080/api/v1/products/repo/${repoId}/${productId}`,
     {},
     {

@@ -1,4 +1,7 @@
-import { MouseEventHandler } from "react";
+"use client";
+
+import { MouseEventHandler, useState } from "react";
+import LoadingSpinner from "./LoadingSpinner";
 
 /* eslint-disable @next/next/no-img-element */
 type ResourcePriceBoxProps = {
@@ -7,11 +10,13 @@ type ResourcePriceBoxProps = {
   url: string;
   option?: boolean;
   added?: boolean;
-  onAddClick?: MouseEventHandler<HTMLButtonElement>;
+  onAddClick?: Function;
   onRemoveClick?: MouseEventHandler<HTMLButtonElement>;
 };
 
 export default function ResourcePriceBox(props: ResourcePriceBoxProps) {
+  const [isPending, setIsPending] = useState<boolean>(false);
+
   return (
     <div className="w-full p-4 zoom transition-transform duration-200 transform hover:scale-[1.01]">
       <div className="bg-white rounded-lg shadow-md p-6">
@@ -24,9 +29,21 @@ export default function ResourcePriceBox(props: ResourcePriceBoxProps) {
           {props.option && !props.added && (
             <button
               className="float-right inline-flex items-center bg-gray-900 hover:bg-gray-700 text-white py-2 px-4 rounded-lg mr-1"
-              onClick={props.onAddClick}
+              onClick={() => {
+                if (!props.onAddClick) {
+                  return;
+                }
+                
+                setIsPending(true);
+                try {
+                  props.onAddClick();
+                } catch (error) {
+                  console.error(error);
+                }
+                setIsPending(false);
+              }}
             >
-              Add as Option
+              {isPending ? <LoadingSpinner /> : "Add as Option"}
             </button>
           )}
           {props.option && props.added && (

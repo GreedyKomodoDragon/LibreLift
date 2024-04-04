@@ -1,19 +1,28 @@
+"use client";
+
+import LoadingSpinner from "@/components/LoadingSpinner";
 import SearchRow from "@/components/SearchRow";
+import Searchbar from "@/components/searchbar";
+import { SearchProjects } from "@/rest/search";
+import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
 
 /* eslint-disable @next/next/no-img-element */
 export default function Search() {
+  const searchParams = useSearchParams();
+  const search = searchParams.get("term");
+
+  const { isPending, error, data } = useQuery({
+    refetchInterval: 0,
+    queryKey: ["search-results", search],
+    queryFn: () => SearchProjects(search || ""),
+  });
+
   return (
     <div className="container mx-auto py-8">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
-          <input
-            type="text"
-            placeholder="Search..."
-            className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 w-64"
-          />
-          <button className="ml-2 px-4 py-2 bg-blue-500 text-white rounded-md shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-blue-500 focus:ring-offset-blue-200 focus:ring-2 focus:border-transparent">
-            Search
-          </button>
+          <Searchbar />
         </div>
 
         <div className="flex items-center">
@@ -29,9 +38,38 @@ export default function Search() {
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-between">
-        <SearchRow />
-        <SearchRow />
+      <div className="flex flex-wrap justify-between w-full">
+        {isPending && (
+          <div className="flex justify-center items-center w-full">
+            <LoadingSpinner size={16} />
+          </div>
+        )}
+        {!isPending && !error && (
+          <>
+            {data.length !== 0 ? (
+              data.map((d) => (
+                // eslint-disable-next-line react/jsx-key
+                <SearchRow
+                  id={d.id}
+                  projectName={d.name}
+                  description={d.description}
+                />
+              ))
+            ) : (
+              <div className="flex items-center justify-center w-full">
+                <div className="text-center">
+                  <h1 className="text-2xl font-bold text-gray-800 mt-4">
+                    No search results found
+                  </h1>
+                  <p className="text-gray-600 mt-2">
+                    Sorry, we could not find any results matching your search.
+                  </p>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+        {}
       </div>
     </div>
   );

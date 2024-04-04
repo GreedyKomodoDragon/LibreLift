@@ -5,20 +5,36 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import ProductGroupButton from "@/components/profile/ProductGroupButton";
 import ResourcePriceBox from "@/components/resourcePriceBox";
 import Searchbar from "@/components/searchbar";
-import { addProductToRepo, getRepoProducts } from "@/rest/products";
-import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import {
+  RepoProduct,
+  addProductToRepo,
+  getRepoProducts,
+} from "@/rest/products";
+import { useEffect, useState } from "react";
 
 export default function Page({ params }: { params: { id: string } }) {
   const [option, setOption] = useState<string>("selected");
+  const [data, setData] = useState<RepoProduct[] | undefined>([]);
+  const [isPending, setPending] = useState<boolean>(true);
+  const [error, setError] = useState<boolean>(false);
 
-  const { isPending, error, data } = useQuery({
-    refetchInterval: 0,
-    queryKey: [`repoProducts-${params.id}`],
-    queryFn: () => getRepoProducts(params.id),
-  });
+  const reload = async () => {
+    setPending(true);
+    try {
+      const products = await getRepoProducts(params.id);
+      setData(products);
+      setError(false);
+    } catch (error) {
+      setError(true);
+    }
+    setPending(false);
+  };
 
-  const showProducts = () => {
+  useEffect(() => {
+    reload();
+  }, []);
+
+  const showProducts = (data: RepoProduct[] | undefined) => {
     switch (option) {
       case "selected":
         return (
@@ -58,7 +74,7 @@ export default function Page({ params }: { params: { id: string } }) {
                 {data
                   .filter((d) => !d.isAdded)
                   .map((d) => (
-                    <div className="sm:w-1/3">
+                    <div key={d.id} className="sm:w-1/3">
                       <ResourcePriceBox
                         title={d.name}
                         pricing={`$${d.price / 100} per Month`}
@@ -66,12 +82,13 @@ export default function Page({ params }: { params: { id: string } }) {
                         option={true}
                         added={d.isAdded}
                         onAddClick={() => {
-                          try {
-                            addProductToRepo(d.id, Number(params.id))
-                          } catch (error) {
-                            console.log(error)
-                          }
-                          
+                          addProductToRepo(d.id, Number(params.id))
+                            .then(() => {
+                              reload();
+                            })
+                            .catch((error) => {
+                              console.error(error);
+                            });
                         }}
                       />
                     </div>
@@ -121,7 +138,7 @@ export default function Page({ params }: { params: { id: string } }) {
         />
       </div>
       <br />
-      <div className="p-4">{showProducts()}</div>
+      <div className="p-4">{showProducts(data)}</div>
     </div>
   );
 }
