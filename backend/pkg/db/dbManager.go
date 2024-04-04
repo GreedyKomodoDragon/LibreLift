@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog/log"
 )
 
@@ -15,12 +16,10 @@ type DBManager interface {
 	GetAllProductsForRepo(repoId int64) ([]RepoProduct, error)
 	AddProductToRepo(productId, repoId int64) error
 	GetRepoOptions(repoId int64) ([]RepoOption, error)
-	// Used to close the client connection to the database
-	Close()
 }
 
 type postgresManager struct {
-	conn *pgx.Conn
+	conn *pgxpool.Pool
 }
 
 type Product struct {
@@ -46,13 +45,13 @@ type RepoOption struct {
 }
 
 func NewDBManager(connectionURL string) (DBManager, error) {
-	conn, err := pgx.Connect(context.Background(), connectionURL)
+	dbpool, err := pgxpool.New(context.Background(), connectionURL)
 	if err != nil {
 		return nil, err
 	}
 
 	return &postgresManager{
-		conn: conn,
+		conn: dbpool,
 	}, nil
 
 }
@@ -61,10 +60,6 @@ func (p *postgresManager) AddRepo(username int64, id int64) error {
 	// Uses a built in postgres function to insert the item into the table
 	_, err := p.conn.Exec(context.Background(), "SELECT insert_into_repo_table($1, $2)", id, username)
 	return err
-}
-
-func (p *postgresManager) Close() {
-	p.conn.Close(context.Background())
 }
 
 func (p *postgresManager) GetUsersRepos(username int64) ([]int64, error) {
@@ -118,7 +113,6 @@ func (p *postgresManager) GetAllProducts() ([]Product, error) {
 }
 
 func (p *postgresManager) GetAllProductsForRepo(repoId int64) ([]RepoProduct, error) {
-
 	results, err := p.conn.Query(context.Background(), `
 	SELECT 
     	CASE 

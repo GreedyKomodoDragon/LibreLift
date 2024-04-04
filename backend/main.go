@@ -85,7 +85,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer pg.Close()
 
 	projectManager := projects.NewProjectManager(pg)
 	productManager := products.NewProductManager(pg)

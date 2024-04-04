@@ -179,7 +179,7 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 
 		products, err := productManager.GetRepoProducts(id)
 		if err != nil {
-			log.Error().Err(err).Msg("failed to get all products")
+			log.Error().Int64("repoId", id).Err(err).Msg("failed to get all products")
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
