@@ -6,17 +6,20 @@ import ResourcePurchaseBox from "@/components/resourcePurchaseBox";
 import { GetRepoMetaData } from "@/rest/github";
 import { getRepoOptions } from "@/rest/products";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 export default function Page({ params }: { params: { id: string } }) {
+  const router = useRouter();
+
   const { isPending, error, data } = useQuery({
     refetchInterval: 0,
-    queryKey: [`repoProducts-${params.id}`],
+    queryKey: ["repoProducts", params.id],
     queryFn: () => getRepoOptions(params.id),
   });
 
   const meta = useQuery({
     refetchInterval: 0,
-    queryKey: [`repo-${params.id}`],
+    queryKey: ['repo', params.id],
     queryFn: () => GetRepoMetaData(Number(params.id)),
   });
 
@@ -31,7 +34,9 @@ export default function Page({ params }: { params: { id: string } }) {
         {!meta.isPending && meta.data && (
           <>
             <h1 className="text-4xl">{meta.data.name}</h1>
-            <p className="text-lg ml-4 mt-2">Description: {meta.data.description || "No Description"}</p>
+            <p className="text-lg ml-4 mt-2">
+              Description: {meta.data.description || "No Description"}
+            </p>
           </>
         )}
       </div>
@@ -51,7 +56,9 @@ export default function Page({ params }: { params: { id: string } }) {
                   pricing={`$${d.price / 100} per Month`}
                   url={d.url}
                   hasSubscription={i % 2 == 0}
-                  onAddClick={() => {}}
+                  oneTimePayment={() => {
+                    router.push(`/checkout?productID=${d.id}&repoID=${params.id}`)
+                  }}
                   onRemoveClick={() => {}}
                 />
               </div>

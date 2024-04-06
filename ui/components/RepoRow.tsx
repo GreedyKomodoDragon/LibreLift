@@ -62,8 +62,8 @@ export default function RepoRow(props: RepoRow) {
                       className="ml-2"
                     />
                   </Link>
-                  <a
-                    href="#"
+                  <Link
+                    href={`/profile/repositories/${props.id}/dashboard`}
                     className="inline-flex items-center bg-blue-900 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
                   >
                     To Dashboard
@@ -73,7 +73,7 @@ export default function RepoRow(props: RepoRow) {
                       alt="Github logo"
                       className="ml-2"
                     />
-                  </a>
+                  </Link>
                 </>
               ) : (
                 <button

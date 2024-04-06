@@ -6,7 +6,7 @@ type ResourcePurchaseBoxProps = {
   pricing: string;
   url: string;
   hasSubscription: boolean;
-  onAddClick: MouseEventHandler<HTMLButtonElement>;
+  oneTimePayment: MouseEventHandler<HTMLButtonElement>;
   onRemoveClick: MouseEventHandler<HTMLButtonElement>;
 };
 
@@ -22,7 +22,7 @@ export default function ResourcePurchaseBox(props: ResourcePurchaseBoxProps) {
         <div className="flex justify-center items-center">
           <button
             className="inline-flex min-h-[3rem] items-center bg-gray-900 hover:bg-gray-700 text-white py-2 px-4 rounded-lg mr-1"
-            onClick={props.onAddClick}
+            onClick={props.oneTimePayment}
           >
             One-Time Payment
           </button>
