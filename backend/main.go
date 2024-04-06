@@ -4,6 +4,7 @@ import (
 	"context"
 	"librelift/pkg/auth"
 	"librelift/pkg/db"
+	"librelift/pkg/payments"
 	"librelift/pkg/products"
 	"librelift/pkg/projects"
 	"librelift/pkg/rest"
@@ -52,6 +53,11 @@ func main() {
 		panic("missing ELASTIC_ADDRESS")
 	}
 
+	stripeKey := os.Getenv("STRIPE_KEY")
+	if len(stripeKey) == 0 {
+		panic("missing STRIPE_KEY")
+	}
+
 	cert, err := os.ReadFile(elasticCAPath)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error getting ca certs")
@@ -77,8 +83,8 @@ func main() {
 
 	log.Info().Msg("elasticsearch was connected")
 
+	paymentManager := payments.NewStripeManager(stripeKey)
 	searchManager := search.NewElasticsearchManager(es)
-
 	authManager := auth.NewAuthManager(clientID, clientSecret)
 
 	pg, err := db.NewDBManager("postgres://myuser:mypassword@localhost:5432/mydatabase")
@@ -87,8 +93,8 @@ func main() {
 	}
 
 	projectManager := projects.NewProjectManager(pg)
-	productManager := products.NewProductManager(pg)
-	app := rest.NewFiberHttpServer(authManager, projectManager, productManager, searchManager)
+	productManager := products.NewProductManager(pg, paymentManager)
+	app := rest.NewFiberHttpServer(authManager, projectManager, productManager, searchManager, paymentManager)
 
 	log.Info().Int("port", 8080).Msg("listening on port")
 	app.Listen("127.0.0.1:8080")

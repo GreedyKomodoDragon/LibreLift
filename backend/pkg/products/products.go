@@ -1,21 +1,28 @@
 package products
 
-import "librelift/pkg/db"
+import (
+	"librelift/pkg/db"
+	"librelift/pkg/payments"
+)
 
 type ProductsManager interface {
 	GetAllProducts() ([]db.Product, error)
 	GetRepoProducts(repoId int64) ([]db.RepoProduct, error)
-	AddProductToRepo(productId, repoId int64) error
+	GetProductPrice(productId int64) (int64, error)
+	AddProductToRepo(productId, repoId, price int64) error
 	GetReposOptions(id int64) ([]db.RepoOption, error)
+	GetPriceId(repoId, prodId int64) (string, error)
 }
 
 type productsManager struct {
-	dbManager db.DBManager
+	dbManager      db.DBManager
+	paymentManager payments.PaymentsManager
 }
 
-func NewProductManager(dbManager db.DBManager) ProductsManager {
+func NewProductManager(dbManager db.DBManager, paymentManager payments.PaymentsManager) ProductsManager {
 	return &productsManager{
-		dbManager: dbManager,
+		dbManager:      dbManager,
+		paymentManager: paymentManager,
 	}
 }
 
@@ -24,14 +31,26 @@ func (p *productsManager) GetAllProducts() ([]db.Product, error) {
 }
 
 func (p *productsManager) GetRepoProducts(repoId int64) ([]db.RepoProduct, error) {
-	// Could be Inefficient if 1000's of products?
 	return p.dbManager.GetAllProductsForRepo(repoId)
 }
 
-func (p *productsManager) AddProductToRepo(productId, repoId int64) error {
-	return p.dbManager.AddProductToRepo(productId, repoId)
+func (p *productsManager) AddProductToRepo(productId, repoId, price int64) error {
+	priceId, err := p.paymentManager.CreateProductForRepo(repoId, productId, price)
+	if err != nil {
+		return err
+	}
+
+	return p.dbManager.AddProductToRepo(productId, repoId, priceId)
 }
 
 func (p *productsManager) GetReposOptions(id int64) ([]db.RepoOption, error) {
 	return p.dbManager.GetRepoOptions(id)
+}
+
+func (p *productsManager) GetProductPrice(prodId int64) (int64, error) {
+	return p.dbManager.GetProductPrice(prodId)
+}
+
+func (p *productsManager) GetPriceId(repoId, prodId int64) (string, error) {
+	return p.dbManager.GetPriceId(repoId, prodId)
 }

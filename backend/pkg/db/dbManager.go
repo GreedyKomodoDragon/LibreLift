@@ -14,8 +14,10 @@ type DBManager interface {
 	GetUsersRepos(username int64) ([]int64, error)
 	GetAllProducts() ([]Product, error)
 	GetAllProductsForRepo(repoId int64) ([]RepoProduct, error)
-	AddProductToRepo(productId, repoId int64) error
+	AddProductToRepo(productId, repoId int64, priceId string) error
 	GetRepoOptions(repoId int64) ([]RepoOption, error)
+	GetProductPrice(prodId int64) (int64, error)
+	GetPriceId(repoId, prodId int64) (string, error)
 }
 
 type postgresManager struct {
@@ -26,14 +28,14 @@ type Product struct {
 	Id    int64  `json:"id"`
 	Name  string `json:"name"`
 	URL   string `json:"url"`
-	Price int32  `json:"price"`
+	Price int64  `json:"price"`
 }
 
 type RepoProduct struct {
 	Id      int64  `json:"id"`
 	Name    string `json:"name"`
 	URL     string `json:"url"`
-	Price   int32  `json:"price"`
+	Price   int64  `json:"price"`
 	IsAdded bool   `json:"isAdded"`
 }
 
@@ -41,7 +43,7 @@ type RepoOption struct {
 	Id    int64  `json:"id"`
 	Name  string `json:"name"`
 	URL   string `json:"url"`
-	Price int32  `json:"price"`
+	Price int64  `json:"price"`
 }
 
 func NewDBManager(connectionURL string) (DBManager, error) {
@@ -159,7 +161,7 @@ func (p *postgresManager) convertRowsToProduct(results pgx.Rows) (*[]Product, er
 			return nil, fmt.Errorf("invalid row structure returned, on second column")
 		}
 
-		price, ok := anySlice[2].(int32)
+		price, ok := anySlice[2].(int64)
 		if !ok {
 			return nil, fmt.Errorf("invalid row structure returned, on third column")
 		}
@@ -209,7 +211,7 @@ func (p *postgresManager) convertRowsToRepoProduct(results pgx.Rows) (*[]RepoPro
 			return nil, fmt.Errorf("invalid row structure returned, on third column")
 		}
 
-		price, ok := anySlice[3].(int32)
+		price, ok := anySlice[3].(int64)
 		if !ok {
 			return nil, fmt.Errorf("invalid row structure returned, on fourth column")
 		}
@@ -232,8 +234,8 @@ func (p *postgresManager) convertRowsToRepoProduct(results pgx.Rows) (*[]RepoPro
 	return &products, nil
 }
 
-func (p *postgresManager) AddProductToRepo(productId, repoId int64) error {
-	_, err := p.conn.Exec(context.Background(), "INSERT into repo_products values ($1, $2);", repoId, productId)
+func (p *postgresManager) AddProductToRepo(productId, repoId int64, priceId string) error {
+	_, err := p.conn.Exec(context.Background(), "INSERT into repo_products values ($1, $2, $3);", repoId, productId, priceId)
 	return err
 }
 
@@ -285,7 +287,7 @@ func (p *postgresManager) convertRowsToRepoOption(results pgx.Rows) (*[]RepoOpti
 			return nil, fmt.Errorf("invalid row structure returned, on third column")
 		}
 
-		price, ok := anySlice[3].(int32)
+		price, ok := anySlice[3].(int64)
 		if !ok {
 			return nil, fmt.Errorf("invalid row structure returned, on fourth column")
 		}
@@ -300,4 +302,58 @@ func (p *postgresManager) convertRowsToRepoOption(results pgx.Rows) (*[]RepoOpti
 	}
 
 	return &products, nil
+}
+
+func (p *postgresManager) GetProductPrice(prodId int64) (int64, error) {
+	result, err := p.conn.Query(context.Background(), "SELECT price FROM products WHERE id = $1;", prodId)
+	if err != nil {
+		return 0, err
+	}
+
+	if !result.Next() {
+		return 0, fmt.Errorf("not data returned in GetProductInfo")
+	}
+
+	anySlice, err := result.Values()
+	if err != nil {
+		return 0, err
+	}
+
+	if len(anySlice) != 1 {
+		return 0, fmt.Errorf("invalid row structure returned in GetProductInfo")
+	}
+
+	price, ok := anySlice[0].(int64)
+	if !ok {
+		return 0, fmt.Errorf("invalid row structure returned, on price column in GetProductInfo")
+	}
+
+	return price, nil
+}
+
+func (p *postgresManager) GetPriceId(repoId, prodId int64) (string, error) {
+	result, err := p.conn.Query(context.Background(), "SELECT priceId FROM repo_products WHERE repo_id = $1 AND product_id = $2;", repoId, prodId)
+	if err != nil {
+		return "", err
+	}
+
+	if !result.Next() {
+		return "", fmt.Errorf("not data returned in GetPriceId")
+	}
+
+	anySlice, err := result.Values()
+	if err != nil {
+		return "", err
+	}
+
+	if len(anySlice) != 1 {
+		return "", fmt.Errorf("invalid row structure returned in GetPriceId")
+	}
+
+	priceId, ok := anySlice[0].(string)
+	if !ok {
+		return "", fmt.Errorf("invalid row structure returned, on priceId column in GetPriceId")
+	}
+
+	return priceId, nil
 }

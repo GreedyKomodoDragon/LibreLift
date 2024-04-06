@@ -2,6 +2,7 @@ package rest
 
 import (
 	"librelift/pkg/auth"
+	"librelift/pkg/payments"
 	"librelift/pkg/products"
 	"librelift/pkg/projects"
 	"librelift/pkg/search"
@@ -12,7 +13,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects.ProjectManager, productManager products.ProductsManager, searchManager search.SearchManager) {
+func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects.ProjectManager,
+	productManager products.ProductsManager, searchManager search.SearchManager, paymentManager payments.PaymentsManager) {
 
 	router := app.Group("/api/v1")
 
@@ -20,6 +22,7 @@ func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects
 	addProject(router, projectManager, searchManager)
 	addProducts(router, productManager, authManager)
 	addSearch(router, searchManager)
+	addPayments(router, productManager, paymentManager)
 }
 
 type LoginReq struct {
@@ -228,7 +231,15 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 			})
 		}
 
-		if err := productManager.AddProductToRepo(pid, id); err != nil {
+		price, err := productManager.GetProductPrice(pid)
+		if err != nil {
+			log.Err(err).Int64("productId", pid).Msg("find to get price from product")
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": "could not find product",
+			})
+		}
+
+		if err := productManager.AddProductToRepo(pid, id, price); err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
@@ -254,6 +265,36 @@ func addSearch(router fiber.Router, searchManager search.SearchManager) {
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"results": documents,
+		})
+	})
+}
+
+type CreateSessionRequestBody struct {
+	RepoId    int64 `json:"repoId"`
+	ProductId int64 `json:"productId"`
+}
+
+func addPayments(router fiber.Router, productManager products.ProductsManager, paymentManager payments.PaymentsManager) {
+	paymentRouter := router.Group("/payments")
+
+	paymentRouter.Post("/create/session", func(c *fiber.Ctx) error {
+		var body CreateSessionRequestBody
+		if err := c.BodyParser(&body); err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		priceId, err := productManager.GetPriceId(body.RepoId, body.ProductId)
+		if err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		clientSecret, err := paymentManager.CreateCheckoutSession(priceId)
+		if err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"clientSecret": clientSecret,
 		})
 	})
 }

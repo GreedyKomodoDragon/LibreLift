@@ -2,6 +2,7 @@ package rest
 
 import (
 	"librelift/pkg/auth"
+	"librelift/pkg/payments"
 	"librelift/pkg/products"
 	"librelift/pkg/projects"
 	"librelift/pkg/search"
@@ -11,7 +12,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
-func NewFiberHttpServer(authManager auth.AuthManager, projectManager projects.ProjectManager, productManager products.ProductsManager, searchManager search.SearchManager) *fiber.App {
+func NewFiberHttpServer(authManager auth.AuthManager, projectManager projects.ProjectManager,
+	productManager products.ProductsManager, searchManager search.SearchManager, paymentManager payments.PaymentsManager) *fiber.App {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
@@ -50,7 +52,7 @@ func NewFiberHttpServer(authManager auth.AuthManager, projectManager projects.Pr
 		return c.Next()
 	})
 
-	addV1(app, authManager, projectManager, productManager, searchManager)
+	addV1(app, authManager, projectManager, productManager, searchManager, paymentManager)
 
 	return app
 }
