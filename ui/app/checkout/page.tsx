@@ -37,6 +37,8 @@ export default function CheckoutForm() {
       {
         productId: Number(productID),
         repoId: Number(repoID),
+        // NOTE: backend does not yet support subscriptions
+        IsSubscription: false
       },
       { withCredentials: true }
     );
@@ -47,7 +49,7 @@ export default function CheckoutForm() {
   const options = { fetchClientSecret };
 
   return (
-    <div id="checkout">
+    <div id="checkout" className="mt-5">
       <EmbeddedCheckoutProvider stripe={stripePromise} options={options}>
         <EmbeddedCheckout />
       </EmbeddedCheckoutProvider>

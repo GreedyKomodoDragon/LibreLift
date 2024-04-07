@@ -7,7 +7,7 @@ type ResourcePurchaseBoxProps = {
   url: string;
   hasSubscription: boolean;
   oneTimePayment: MouseEventHandler<HTMLButtonElement>;
-  onRemoveClick: MouseEventHandler<HTMLButtonElement>;
+  subscribe: MouseEventHandler<HTMLButtonElement>;
 };
 
 export default function ResourcePurchaseBox(props: ResourcePurchaseBoxProps) {

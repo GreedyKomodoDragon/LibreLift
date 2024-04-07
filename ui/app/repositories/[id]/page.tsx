@@ -53,13 +53,13 @@ export default function Page({ params }: { params: { id: string } }) {
               <div className="sm:w-1/3">
                 <ResourcePurchaseBox
                   title={d.name}
-                  pricing={`$${d.price / 100} per Month`}
+                  pricing={`$${d.price / 100} (per Month)`}
                   url={d.url}
-                  hasSubscription={i % 2 == 0}
+                  hasSubscription={false}
                   oneTimePayment={() => {
                     router.push(`/checkout?productID=${d.id}&repoID=${params.id}`)
                   }}
-                  onRemoveClick={() => {}}
+                  subscribe={() => {}}
                 />
               </div>
             ))}
