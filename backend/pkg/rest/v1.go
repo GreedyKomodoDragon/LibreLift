@@ -231,7 +231,7 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 			})
 		}
 
-		price, err := productManager.GetProductPrice(pid)
+		name, price, err := productManager.GetProductNameAndPrice(pid)
 		if err != nil {
 			log.Err(err).Int64("productId", pid).Msg("find to get price from product")
 			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -239,7 +239,8 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 			})
 		}
 
-		if err := productManager.AddProductToRepo(pid, id, price); err != nil {
+		if err := productManager.AddProductToRepo(name, pid, id, price); err != nil {
+			log.Error().Int64("repoId", id).Int64("productId", pid).Err(err).Msg("failed to add product")
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
@@ -270,8 +271,9 @@ func addSearch(router fiber.Router, searchManager search.SearchManager) {
 }
 
 type CreateSessionRequestBody struct {
-	RepoId    int64 `json:"repoId"`
-	ProductId int64 `json:"productId"`
+	RepoId         int64 `json:"repoId"`
+	ProductId      int64 `json:"productId"`
+	IsSubscription bool  `json:"isSubscription"`
 }
 
 func addPayments(router fiber.Router, productManager products.ProductsManager, paymentManager payments.PaymentsManager) {
@@ -290,6 +292,7 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 
 		clientSecret, err := paymentManager.CreateCheckoutSession(priceId)
 		if err != nil {
+			log.Error().Str("priceId", priceId).Err(err).Msg("failed to create checkout session")
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 

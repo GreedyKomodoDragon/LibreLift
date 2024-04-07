@@ -12,7 +12,7 @@ import (
 type PaymentsManager interface {
 	CreateCheckoutSession(priceId string) (string, error)
 	GetSessionStatus(sessionId string) (string, string, error)
-	CreateProductForRepo(repoid int64, productId int64, productPrice int64) (string, error)
+	CreateProductForRepo(repoid int64, productName string, productPrice int64) (string, string, error)
 }
 
 type stripeManager struct {
@@ -57,17 +57,49 @@ func (s *stripeManager) GetSessionStatus(sessionId string) (string, string, erro
 
 }
 
-func (s *stripeManager) CreateProductForRepo(repoid int64, productId int64, productPrice int64) (string, error) {
-	params := &stripe.ProductParams{Name: stripe.String(fmt.Sprintf("%v-%v", repoid, productId))}
+func (s *stripeManager) CreateProductForRepo(repoid int64, productName string, productPrice int64) (string, string, error) {
+	params := &stripe.ProductParams{Name: stripe.String(fmt.Sprintf("%v - %s", repoid, productName))}
 	result, err := product.New(params)
+	if err != nil {
+		return "", "", err
+	}
+
+	oneOff, err := s.createProductPrice(&result.ID, &productPrice)
+	if err != nil {
+		return "", "", err
+	}
+
+	recurring, err := s.createMonthlyProductPrice(&result.ID, &productPrice)
+	if err != nil {
+		return "", "", err
+	}
+
+	return oneOff, recurring, nil
+}
+
+func (s *stripeManager) createProductPrice(productId *string, productPrice *int64) (string, error) {
+	priceParams := &stripe.PriceParams{
+		Product:    productId,
+		UnitAmount: productPrice,
+		Currency:   stripe.String(string(stripe.CurrencyUSD)),
+	}
+
+	priceResult, err := price.New(priceParams)
 	if err != nil {
 		return "", err
 	}
 
+	return priceResult.ID, nil
+}
+
+func (s *stripeManager) createMonthlyProductPrice(productId *string, productPrice *int64) (string, error) {
 	priceParams := &stripe.PriceParams{
-		Product:    stripe.String(result.ID),
-		UnitAmount: stripe.Int64(productPrice),
+		Product:    productId,
+		UnitAmount: productPrice,
 		Currency:   stripe.String(string(stripe.CurrencyUSD)),
+		Recurring: &stripe.PriceRecurringParams{
+			Interval: stripe.String(string(stripe.PriceRecurringIntervalMonth)),
+		},
 	}
 
 	priceResult, err := price.New(priceParams)

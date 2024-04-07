@@ -8,8 +8,8 @@ import (
 type ProductsManager interface {
 	GetAllProducts() ([]db.Product, error)
 	GetRepoProducts(repoId int64) ([]db.RepoProduct, error)
-	GetProductPrice(productId int64) (int64, error)
-	AddProductToRepo(productId, repoId, price int64) error
+	GetProductNameAndPrice(productId int64) (string, int64, error)
+	AddProductToRepo(productName string, productId, repoId, price int64) error
 	GetReposOptions(id int64) ([]db.RepoOption, error)
 	GetPriceId(repoId, prodId int64) (string, error)
 }
@@ -34,21 +34,21 @@ func (p *productsManager) GetRepoProducts(repoId int64) ([]db.RepoProduct, error
 	return p.dbManager.GetAllProductsForRepo(repoId)
 }
 
-func (p *productsManager) AddProductToRepo(productId, repoId, price int64) error {
-	priceId, err := p.paymentManager.CreateProductForRepo(repoId, productId, price)
+func (p *productsManager) AddProductToRepo(productName string, productId, repoId, price int64) error {
+	oneOffId, recurringId, err := p.paymentManager.CreateProductForRepo(repoId, productName, price)
 	if err != nil {
 		return err
 	}
 
-	return p.dbManager.AddProductToRepo(productId, repoId, priceId)
+	return p.dbManager.AddProductToRepo(productId, repoId, oneOffId, recurringId)
 }
 
 func (p *productsManager) GetReposOptions(id int64) ([]db.RepoOption, error) {
 	return p.dbManager.GetRepoOptions(id)
 }
 
-func (p *productsManager) GetProductPrice(prodId int64) (int64, error) {
-	return p.dbManager.GetProductPrice(prodId)
+func (p *productsManager) GetProductNameAndPrice(prodId int64) (string, int64, error) {
+	return p.dbManager.GetProductNameAndPrice(prodId)
 }
 
 func (p *productsManager) GetPriceId(repoId, prodId int64) (string, error) {

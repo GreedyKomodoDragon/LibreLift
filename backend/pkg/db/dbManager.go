@@ -14,9 +14,9 @@ type DBManager interface {
 	GetUsersRepos(username int64) ([]int64, error)
 	GetAllProducts() ([]Product, error)
 	GetAllProductsForRepo(repoId int64) ([]RepoProduct, error)
-	AddProductToRepo(productId, repoId int64, priceId string) error
+	AddProductToRepo(productId, repoId int64, oneOffId, recurringId string) error
 	GetRepoOptions(repoId int64) ([]RepoOption, error)
-	GetProductPrice(prodId int64) (int64, error)
+	GetProductNameAndPrice(prodId int64) (string, int64, error)
 	GetPriceId(repoId, prodId int64) (string, error)
 }
 
@@ -234,8 +234,8 @@ func (p *postgresManager) convertRowsToRepoProduct(results pgx.Rows) (*[]RepoPro
 	return &products, nil
 }
 
-func (p *postgresManager) AddProductToRepo(productId, repoId int64, priceId string) error {
-	_, err := p.conn.Exec(context.Background(), "INSERT into repo_products values ($1, $2, $3);", repoId, productId, priceId)
+func (p *postgresManager) AddProductToRepo(productId, repoId int64, oneOffId, recurringId string) error {
+	_, err := p.conn.Exec(context.Background(), "INSERT into repo_products values ($1, $2, $3, $4);", repoId, productId, oneOffId, recurringId)
 	return err
 }
 
@@ -304,35 +304,40 @@ func (p *postgresManager) convertRowsToRepoOption(results pgx.Rows) (*[]RepoOpti
 	return &products, nil
 }
 
-func (p *postgresManager) GetProductPrice(prodId int64) (int64, error) {
-	result, err := p.conn.Query(context.Background(), "SELECT price FROM products WHERE id = $1;", prodId)
+func (p *postgresManager) GetProductNameAndPrice(prodId int64) (string, int64, error) {
+	result, err := p.conn.Query(context.Background(), "SELECT price, prod_name FROM products WHERE id = $1;", prodId)
 	if err != nil {
-		return 0, err
+		return "", 0, err
 	}
 
 	if !result.Next() {
-		return 0, fmt.Errorf("not data returned in GetProductInfo")
+		return "", 0, fmt.Errorf("not data returned in GetProductInfo")
 	}
 
 	anySlice, err := result.Values()
 	if err != nil {
-		return 0, err
+		return "", 0, err
 	}
 
-	if len(anySlice) != 1 {
-		return 0, fmt.Errorf("invalid row structure returned in GetProductInfo")
+	if len(anySlice) != 2 {
+		return "", 0, fmt.Errorf("invalid row structure returned in GetProductInfo")
 	}
 
 	price, ok := anySlice[0].(int64)
 	if !ok {
-		return 0, fmt.Errorf("invalid row structure returned, on price column in GetProductInfo")
+		return "", 0, fmt.Errorf("invalid row structure returned, on price column in GetProductInfo")
 	}
 
-	return price, nil
+	name, ok := anySlice[1].(string)
+	if !ok {
+		return "", 0, fmt.Errorf("invalid row structure returned, on name column in GetProductInfo")
+	}
+
+	return name, price, nil
 }
 
 func (p *postgresManager) GetPriceId(repoId, prodId int64) (string, error) {
-	result, err := p.conn.Query(context.Background(), "SELECT priceId FROM repo_products WHERE repo_id = $1 AND product_id = $2;", repoId, prodId)
+	result, err := p.conn.Query(context.Background(), "SELECT oneoffid FROM repo_products WHERE repo_id = $1 AND product_id = $2;", repoId, prodId)
 	if err != nil {
 		return "", err
 	}
