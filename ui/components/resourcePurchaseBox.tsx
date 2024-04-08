@@ -26,13 +26,15 @@ export default function ResourcePurchaseBox(props: ResourcePurchaseBoxProps) {
           >
             One-Time Payment
           </button>
-          {props.hasSubscription && (
+          {props.hasSubscription ? (
             <button className="min-h-[3rem] text-lg items-center bg-blue-800 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">
               Manage Subscription
             </button>
-          )}
-          {!props.hasSubscription && (
-            <button className="min-h-[3rem] text-lg items-center bg-green-800 hover:bg-green-700 text-white py-2 px-4 rounded-lg">
+          ) : (
+            <button
+              className="min-h-[3rem] text-lg items-center bg-green-800 hover:bg-green-700 text-white py-2 px-4 rounded-lg"
+              onClick={props.subscribe}
+            >
               Subscribe
             </button>
           )}

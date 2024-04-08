@@ -59,7 +59,9 @@ export default function Page({ params }: { params: { id: string } }) {
                   oneTimePayment={() => {
                     router.push(`/checkout?productID=${d.id}&repoID=${params.id}`)
                   }}
-                  subscribe={() => {}}
+                  subscribe={() => {
+                    router.push(`/checkout?productID=${d.id}&repoID=${params.id}&subscription=true`)
+                  }}
                 />
               </div>
             ))}

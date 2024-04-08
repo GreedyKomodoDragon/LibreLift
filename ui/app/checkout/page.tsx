@@ -30,6 +30,7 @@ export default function CheckoutForm() {
       return;
     }
 
+    const subscription = searchParams.get("subscription");
 
     // Create a Checkout Session
     const response = await axios.post(
@@ -37,8 +38,7 @@ export default function CheckoutForm() {
       {
         productId: Number(productID),
         repoId: Number(repoID),
-        // NOTE: backend does not yet support subscriptions
-        IsSubscription: false
+        isSubscription: subscription === "true"
       },
       { withCredentials: true }
     );
