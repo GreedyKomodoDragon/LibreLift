@@ -11,7 +11,7 @@ type ProductsManager interface {
 	GetProductNameAndPrice(productId int64) (string, int64, error)
 	AddProductToRepo(productName string, productId, repoId, price int64) error
 	GetReposOptions(id int64) ([]db.RepoOption, error)
-	GetPriceId(repoId, prodId int64) (string, error)
+	GetPriceId(repoId, prodId int64, isSubscription bool) (string, error)
 }
 
 type productsManager struct {
@@ -51,6 +51,6 @@ func (p *productsManager) GetProductNameAndPrice(prodId int64) (string, int64, e
 	return p.dbManager.GetProductNameAndPrice(prodId)
 }
 
-func (p *productsManager) GetPriceId(repoId, prodId int64) (string, error) {
-	return p.dbManager.GetPriceId(repoId, prodId)
+func (p *productsManager) GetPriceId(repoId, prodId int64, isSubscription bool) (string, error) {
+	return p.dbManager.GetPriceId(repoId, prodId, isSubscription)
 }

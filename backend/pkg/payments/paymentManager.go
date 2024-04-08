@@ -10,8 +10,8 @@ import (
 )
 
 type PaymentsManager interface {
-	CreateCheckoutSession(priceId string) (string, error)
-	GetSessionStatus(sessionId string) (string, string, error)
+	CreateCheckoutSession(priceId string, subcription bool) (string, error)
+	GetSessionStatus(sessionId string) (status string, email string, err error)
 	CreateProductForRepo(repoid int64, productName string, productPrice int64) (string, string, error)
 }
 
@@ -23,9 +23,14 @@ func NewStripeManager(key string) PaymentsManager {
 	return &stripeManager{}
 }
 
-func (s *stripeManager) CreateCheckoutSession(priceId string) (string, error) {
+func (s *stripeManager) CreateCheckoutSession(priceId string, subcription bool) (string, error) {
 	// TODO: Make this dynamic/env variable
 	domain := "http://127.0.0.1:3000"
+
+	mode := stripe.String(string(stripe.CheckoutSessionModePayment))
+	if subcription {
+		mode = stripe.String(string(stripe.CheckoutSessionModeSubscription))
+	}
 
 	params := &stripe.CheckoutSessionParams{
 		UIMode:    stripe.String("embedded"),
@@ -36,7 +41,7 @@ func (s *stripeManager) CreateCheckoutSession(priceId string) (string, error) {
 				Quantity: stripe.Int64(1),
 			},
 		},
-		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
+		Mode: mode,
 	}
 
 	sess, err := session.New(params)
@@ -53,12 +58,17 @@ func (s *stripeManager) GetSessionStatus(sessionId string) (string, string, erro
 		return "", "", err
 	}
 
-	return string(sess.Status), string(sess.CustomerDetails.Email), nil
+	// if sess.Status == "complete" {
+	// 	// TODO: Update database with customerid to allow a user to view all the purchases/subscriptions
+	// }
 
+	return string(sess.Status), string(sess.CustomerDetails.Email), nil
 }
 
 func (s *stripeManager) CreateProductForRepo(repoid int64, productName string, productPrice int64) (string, string, error) {
-	params := &stripe.ProductParams{Name: stripe.String(fmt.Sprintf("%v - %s", repoid, productName))}
+	params := &stripe.ProductParams{
+		Name: stripe.String(fmt.Sprintf("%v - %s", repoid, productName)),
+	}
 	result, err := product.New(params)
 	if err != nil {
 		return "", "", err

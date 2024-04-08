@@ -17,7 +17,7 @@ type DBManager interface {
 	AddProductToRepo(productId, repoId int64, oneOffId, recurringId string) error
 	GetRepoOptions(repoId int64) ([]RepoOption, error)
 	GetProductNameAndPrice(prodId int64) (string, int64, error)
-	GetPriceId(repoId, prodId int64) (string, error)
+	GetPriceId(repoId, prodId int64, isSubscription bool) (string, error)
 }
 
 type postgresManager struct {
@@ -336,8 +336,13 @@ func (p *postgresManager) GetProductNameAndPrice(prodId int64) (string, int64, e
 	return name, price, nil
 }
 
-func (p *postgresManager) GetPriceId(repoId, prodId int64) (string, error) {
-	result, err := p.conn.Query(context.Background(), "SELECT oneoffid FROM repo_products WHERE repo_id = $1 AND product_id = $2;", repoId, prodId)
+func (p *postgresManager) GetPriceId(repoId, prodId int64, isSubscription bool) (string, error) {
+	sql := "SELECT oneoffid FROM repo_products WHERE repo_id = $1 AND product_id = $2;"
+	if isSubscription {
+		sql = "SELECT recurringid FROM repo_products WHERE repo_id = $1 AND product_id = $2;"
+	}
+
+	result, err := p.conn.Query(context.Background(), sql, repoId, prodId)
 	if err != nil {
 		return "", err
 	}

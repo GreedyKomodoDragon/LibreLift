@@ -285,12 +285,12 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
-		priceId, err := productManager.GetPriceId(body.RepoId, body.ProductId)
+		priceId, err := productManager.GetPriceId(body.RepoId, body.ProductId, body.IsSubscription)
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		clientSecret, err := paymentManager.CreateCheckoutSession(priceId)
+		clientSecret, err := paymentManager.CreateCheckoutSession(priceId, body.IsSubscription)
 		if err != nil {
 			log.Error().Str("priceId", priceId).Err(err).Msg("failed to create checkout session")
 			return c.SendStatus(fiber.StatusInternalServerError)
@@ -298,6 +298,21 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"clientSecret": clientSecret,
+		})
+	})
+
+	paymentRouter.Get("/session/status", func(c *fiber.Ctx) error {
+		sessionId := c.Query("session_id")
+
+		status, email, err := paymentManager.GetSessionStatus(sessionId)
+		if err != nil {
+			log.Error().Str("sessionId", sessionId).Err(err).Msg("failed to get payment session")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"status": status,
+			"email":  email,
 		})
 	})
 }
