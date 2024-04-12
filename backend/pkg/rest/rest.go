@@ -25,7 +25,7 @@ func NewFiberHttpServer(authManager auth.AuthManager, projectManager projects.Pr
 	}))
 
 	app.Use(func(c *fiber.Ctx) error {
-		if strings.HasSuffix(c.Path(), "/login") {
+		if strings.HasSuffix(c.Path(), "/login") || strings.HasSuffix(c.Path(), "/webhook") {
 			return c.Next()
 		}
 
@@ -36,7 +36,7 @@ func NewFiberHttpServer(authManager auth.AuthManager, projectManager projects.Pr
 			})
 		}
 
-		ok, err := authManager.IsValidAccessToken(token)
+		userId, ok, err := authManager.IsValidAccessToken(token)
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
@@ -47,6 +47,7 @@ func NewFiberHttpServer(authManager auth.AuthManager, projectManager projects.Pr
 			})
 		}
 
+		c.Locals("userId", userId)
 		c.Locals("librelift-token", token)
 
 		return c.Next()

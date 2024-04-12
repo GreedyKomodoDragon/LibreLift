@@ -10,7 +10,7 @@ import (
 )
 
 type PaymentsManager interface {
-	CreateCheckoutSession(priceId string, subcription bool) (string, error)
+	CreateCheckoutSession(priceId string, subcription bool, metadata map[string]string) (string, error)
 	GetSessionStatus(sessionId string) (status string, email string, err error)
 	CreateProductForRepo(repoid int64, productName string, productPrice int64) (string, string, error)
 }
@@ -23,7 +23,7 @@ func NewStripeManager(key string) PaymentsManager {
 	return &stripeManager{}
 }
 
-func (s *stripeManager) CreateCheckoutSession(priceId string, subcription bool) (string, error) {
+func (s *stripeManager) CreateCheckoutSession(priceId string, subcription bool, metadata map[string]string) (string, error) {
 	// TODO: Make this dynamic/env variable
 	domain := "http://127.0.0.1:3000"
 
@@ -41,7 +41,8 @@ func (s *stripeManager) CreateCheckoutSession(priceId string, subcription bool) 
 				Quantity: stripe.Int64(1),
 			},
 		},
-		Mode: mode,
+		Mode:     mode,
+		Metadata: metadata,
 	}
 
 	sess, err := session.New(params)

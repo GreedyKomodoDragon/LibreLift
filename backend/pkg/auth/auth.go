@@ -10,7 +10,7 @@ import (
 
 type AuthManager interface {
 	GetAccessToken(code string) (string, error)
-	IsValidAccessToken(token string) (bool, error)
+	IsValidAccessToken(token string) (int64, bool, error)
 	GetImageURL(token string) (string, error)
 	IsRepoOwner(token string, repoId int64) (bool, error)
 }
@@ -46,22 +46,26 @@ func (a *authManager) GetAccessToken(code string) (string, error) {
 	return token.AccessToken, nil
 }
 
-func (a *authManager) IsValidAccessToken(token string) (bool, error) {
+func (a *authManager) IsValidAccessToken(token string) (int64, bool, error) {
 	httpClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	))
 
 	client := github.NewClient(httpClient)
-	_, resp, err := client.Users.Get(context.Background(), "")
+	user, resp, err := client.Users.Get(context.Background(), "")
 	if err != nil {
-		if resp.StatusCode == http.StatusUnauthorized {
-			return false, nil
+		if resp == nil {
+			return 0, false, err
 		}
 
-		return false, err
+		if resp.StatusCode == http.StatusUnauthorized {
+			return 0, false, nil
+		}
+
+		return 0, false, err
 	}
 
-	return true, nil
+	return *user.ID, true, nil
 }
 
 func (a *authManager) GetImageURL(token string) (string, error) {

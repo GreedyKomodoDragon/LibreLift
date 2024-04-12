@@ -58,6 +58,10 @@ func main() {
 		panic("missing STRIPE_KEY")
 	}
 
+	if os.Getenv("STRIPE_WEBHOOK_KEY") == "" {
+		panic("missing STRIPE_WEBHOOK_KEY")
+	}
+
 	cert, err := os.ReadFile(elasticCAPath)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error getting ca certs")

@@ -18,6 +18,8 @@ type DBManager interface {
 	GetRepoOptions(repoId int64) ([]RepoOption, error)
 	GetProductNameAndPrice(prodId int64) (string, int64, error)
 	GetPriceId(repoId, prodId int64, isSubscription bool) (string, error)
+	AddPurchase(userId, repoId, productId, purchaseTime int64, isSub bool) error
+	GetUserPurchases(userId int64) ([]ProductPurchase, error)
 }
 
 type postgresManager struct {
@@ -44,6 +46,15 @@ type RepoOption struct {
 	Name  string `json:"name"`
 	URL   string `json:"url"`
 	Price int64  `json:"price"`
+}
+
+type ProductPurchase struct {
+	RepoId   int64  `json:"repoId"`
+	IsOneOff bool   `json:"isOneOff"`
+	UnixTs   int64  `json:"unixTS"`
+	ProdName string `json:"prodName"`
+	Price    int64  `json:"price"`
+	Url      string `json:"url"`
 }
 
 func NewDBManager(connectionURL string) (DBManager, error) {
@@ -366,4 +377,77 @@ func (p *postgresManager) GetPriceId(repoId, prodId int64, isSubscription bool) 
 	}
 
 	return priceId, nil
+}
+
+func (p *postgresManager) AddPurchase(userId, repoId, productId, purchaseTime int64, isSub bool) error {
+	_, err := p.conn.Exec(context.Background(), "INSERT INTO purchases (repo_id, userId, product_id, isOneOff, unixTS) VALUES ($1, $2, $3, $4, $5);", repoId, userId, productId, !isSub, purchaseTime)
+	return err
+}
+
+func (p *postgresManager) GetUserPurchases(userId int64) ([]ProductPurchase, error) {
+	results, err := p.conn.Query(context.Background(), `
+	SELECT repo_id, isoneoff, unixts, prod_name, price, url
+	FROM purchases pur
+	JOIN products p ON pur.product_id = p.id
+	WHERE userid = $1
+	ORDER BY unixts DESC;
+	`, userId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	purchases := []ProductPurchase{}
+	for results.Next() {
+		anySlice, err := results.Values()
+		if err != nil {
+			return nil, err
+		}
+
+		if len(anySlice) != 6 {
+			return nil, fmt.Errorf("invalid row structure returned")
+		}
+
+		repoId, ok := anySlice[0].(int64)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on repoId column")
+		}
+
+		isOneOff, ok := anySlice[1].(bool)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on isOneOff column")
+		}
+
+		unixTs, ok := anySlice[2].(int64)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on unixTs column")
+		}
+
+		prodName, ok := anySlice[3].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on prodName column")
+		}
+
+		price, ok := anySlice[4].(int64)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on 5th column")
+		}
+
+		url, ok := anySlice[5].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on 5th column")
+		}
+
+		purchases = append(purchases, ProductPurchase{
+			RepoId:   repoId,
+			ProdName: prodName,
+			UnixTs:   unixTs,
+			IsOneOff: isOneOff,
+			Price:    price,
+			Url:      url,
+		})
+
+	}
+
+	return purchases, nil
 }

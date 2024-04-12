@@ -1,16 +1,21 @@
 package rest
 
 import (
+	"encoding/json"
+	"fmt"
 	"librelift/pkg/auth"
 	"librelift/pkg/payments"
 	"librelift/pkg/products"
 	"librelift/pkg/projects"
 	"librelift/pkg/search"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
+	"github.com/stripe/stripe-go/v76"
+	"github.com/stripe/stripe-go/v76/webhook"
 )
 
 func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects.ProjectManager,
@@ -42,7 +47,7 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 
 		bearerToken := authHeader[len("Bearer "):]
 
-		ok, err := authManager.IsValidAccessToken(bearerToken)
+		_, ok, err := authManager.IsValidAccessToken(bearerToken)
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
@@ -246,6 +251,28 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 
 		return c.SendStatus(fiber.StatusOK)
 	})
+
+	projectRouter.Get("/purchases", func(c *fiber.Ctx) error {
+		idRef := c.Locals("userId")
+		if idRef == nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		userId, ok := idRef.(int64)
+		if !ok {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		products, err := productManager.GetUserPurchases(userId)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to get all products")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"products": products,
+		})
+	})
 }
 
 func addSearch(router fiber.Router, searchManager search.SearchManager) {
@@ -290,7 +317,18 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		clientSecret, err := paymentManager.CreateCheckoutSession(priceId, body.IsSubscription)
+		userId, ok := c.Locals("userId").(int64)
+		if !ok {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		clientSecret, err := paymentManager.CreateCheckoutSession(priceId, body.IsSubscription, map[string]string{
+			"id":           strconv.FormatInt(userId, 10),
+			"subscription": strconv.FormatBool(body.IsSubscription),
+			"repoId":       strconv.FormatInt(body.RepoId, 10),
+			"productId":    strconv.FormatInt(body.ProductId, 10),
+		})
+
 		if err != nil {
 			log.Error().Str("priceId", priceId).Err(err).Msg("failed to create checkout session")
 			return c.SendStatus(fiber.StatusInternalServerError)
@@ -314,5 +352,40 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 			"status": status,
 			"email":  email,
 		})
+	})
+
+	paymentRouter.Post("/webhook", func(c *fiber.Ctx) error {
+		event := stripe.Event{}
+		if err := c.BodyParser(&event); err != nil {
+			log.Error().Err(err).Msg("body is invalid")
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		endpointSecret := os.Getenv("STRIPE_WEBHOOK_KEY")
+
+		event, err := webhook.ConstructEvent(c.Body(), c.GetReqHeaders()["Stripe-Signature"][0], endpointSecret)
+		if err != nil {
+			log.Error().Err(err).Msg("Invalid Event Sent to webhook")
+			return c.SendStatus(fiber.StatusForbidden)
+		}
+
+		switch event.Type {
+		case "checkout.session.completed":
+			var checkoutSession stripe.CheckoutSession
+			if err := json.Unmarshal(event.Data.Raw, &checkoutSession); err != nil {
+				log.Error().Str("eventType", "checkout.session.completed").Err(err).Msg("Invalid Event unmarshalling")
+				return c.SendStatus(fiber.StatusInternalServerError)
+			}
+
+			if err := productManager.AddPurchase(checkoutSession.Metadata, event.Created); err != nil {
+				log.Error().Str("eventType", "checkout.session.completed").Err(err).Msg("failed to add product update")
+				return c.SendStatus(fiber.StatusInternalServerError)
+			}
+
+		default:
+			fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
+		}
+
+		return c.SendStatus(fiber.StatusOK)
 	})
 }
