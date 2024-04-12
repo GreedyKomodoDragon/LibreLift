@@ -139,7 +139,7 @@ export default function NavigationBar() {
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setIsOpen(false)}
                 >
-                  Public Repositories
+                  My Public Repositories
                 </Link>
                 <Link
                   href="/profile/dashboard"
@@ -149,6 +149,13 @@ export default function NavigationBar() {
                   }}
                 >
                   Dashboard
+                </Link>
+                <Link
+                  href="/profile/purchases"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Purchases
                 </Link>
                 <Link
                   href="#"

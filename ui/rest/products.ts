@@ -54,3 +54,23 @@ export async function addProductToRepo(productId: number, repoId: number) {
     }
   );
 }
+
+export type Purchases = {
+  repoId: number;
+  isOneOff: boolean;
+  unixTS: number;
+  prodName: string;
+  price: number;
+  url: string;
+};
+
+export async function GetPurchases(): Promise<Purchases[]> {
+  const results = await axios.get(
+    `http://127.0.0.1:8080/api/v1/products/purchases`,
+    {
+      withCredentials: true,
+    }
+  );
+
+  return results.data.products;
+}
