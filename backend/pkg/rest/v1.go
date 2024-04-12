@@ -377,7 +377,14 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 
-			if err := productManager.AddPurchase(checkoutSession.Metadata, event.Created); err != nil {
+			prodId := ""
+			if checkoutSession.Subscription != nil {
+				prodId = checkoutSession.Subscription.ID
+			} else {
+				prodId = checkoutSession.PaymentIntent.ID
+			}
+
+			if err := productManager.AddPurchase(checkoutSession.Metadata, event.Created, prodId); err != nil {
 				log.Error().Str("eventType", "checkout.session.completed").Err(err).Msg("failed to add product update")
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
@@ -385,6 +392,13 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 		default:
 			fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
 		}
+
+		return c.SendStatus(fiber.StatusOK)
+	})
+
+	paymentRouter.Delete("/subscription", func(c *fiber.Ctx) error {
+
+		// err := paymentManager.CancelSubscription()
 
 		return c.SendStatus(fiber.StatusOK)
 	})

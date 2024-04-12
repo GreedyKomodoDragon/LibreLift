@@ -59,10 +59,6 @@ func (s *stripeManager) GetSessionStatus(sessionId string) (string, string, erro
 		return "", "", err
 	}
 
-	// if sess.Status == "complete" {
-	// 	// TODO: Update database with customerid to allow a user to view all the purchases/subscriptions
-	// }
-
 	return string(sess.Status), string(sess.CustomerDetails.Email), nil
 }
 

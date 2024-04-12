@@ -18,7 +18,7 @@ type DBManager interface {
 	GetRepoOptions(repoId int64) ([]RepoOption, error)
 	GetProductNameAndPrice(prodId int64) (string, int64, error)
 	GetPriceId(repoId, prodId int64, isSubscription bool) (string, error)
-	AddPurchase(userId, repoId, productId, purchaseTime int64, isSub bool) error
+	AddPurchase(userId, repoId, productId, purchaseTime int64, isSub bool, paymentId string) error
 	GetUserPurchases(userId int64) ([]ProductPurchase, error)
 }
 
@@ -379,8 +379,8 @@ func (p *postgresManager) GetPriceId(repoId, prodId int64, isSubscription bool) 
 	return priceId, nil
 }
 
-func (p *postgresManager) AddPurchase(userId, repoId, productId, purchaseTime int64, isSub bool) error {
-	_, err := p.conn.Exec(context.Background(), "INSERT INTO purchases (repo_id, userId, product_id, isOneOff, unixTS) VALUES ($1, $2, $3, $4, $5);", repoId, userId, productId, !isSub, purchaseTime)
+func (p *postgresManager) AddPurchase(userId, repoId, productId, purchaseTime int64, isSub bool, paymentId string) error {
+	_, err := p.conn.Exec(context.Background(), "INSERT INTO purchases (repo_id, userId, product_id, isOneOff, unixTS, paymentId) VALUES ($1, $2, $3, $4, $5, $6);", repoId, userId, productId, !isSub, purchaseTime, paymentId)
 	return err
 }
 

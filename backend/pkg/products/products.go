@@ -14,7 +14,7 @@ type ProductsManager interface {
 	AddProductToRepo(productName string, productId, repoId, price int64) error
 	GetReposOptions(id int64) ([]db.RepoOption, error)
 	GetPriceId(repoId, prodId int64, isSubscription bool) (string, error)
-	AddPurchase(metadata map[string]string, purchaseTime int64) error
+	AddPurchase(metadata map[string]string, purchaseTime int64, paymentId string) error
 	GetUserPurchases(userId int64) ([]db.ProductPurchase, error)
 }
 
@@ -59,7 +59,7 @@ func (p *productsManager) GetPriceId(repoId, prodId int64, isSubscription bool) 
 	return p.dbManager.GetPriceId(repoId, prodId, isSubscription)
 }
 
-func (p *productsManager) AddPurchase(metadata map[string]string, purchaseTime int64) error {
+func (p *productsManager) AddPurchase(metadata map[string]string, purchaseTime int64, paymentId string) error {
 	idStr, ok := metadata["id"]
 	if !ok {
 		return fmt.Errorf("failed to get attribute: %s", "id")
@@ -100,7 +100,7 @@ func (p *productsManager) AddPurchase(metadata map[string]string, purchaseTime i
 		return fmt.Errorf("failed to parse %s", "subscription")
 	}
 
-	return p.dbManager.AddPurchase(userId, repoId, productId, purchaseTime, sub)
+	return p.dbManager.AddPurchase(userId, repoId, productId, purchaseTime, sub, paymentId)
 }
 
 func (p *productsManager) GetUserPurchases(userId int64) ([]db.ProductPurchase, error) {
