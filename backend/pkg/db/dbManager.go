@@ -20,6 +20,7 @@ type DBManager interface {
 	GetPriceId(repoId, prodId int64, isSubscription bool) (string, error)
 	AddPurchase(userId, repoId, productId, purchaseTime int64, isSub bool, paymentId string) error
 	GetUserPurchases(userId int64) ([]ProductPurchase, error)
+	GetPaymentId(id int64) (string, error)
 }
 
 type postgresManager struct {
@@ -49,6 +50,7 @@ type RepoOption struct {
 }
 
 type ProductPurchase struct {
+	Id       int64  `json:"id"`
 	RepoId   int64  `json:"repoId"`
 	IsOneOff bool   `json:"isOneOff"`
 	UnixTs   int64  `json:"unixTS"`
@@ -386,7 +388,7 @@ func (p *postgresManager) AddPurchase(userId, repoId, productId, purchaseTime in
 
 func (p *postgresManager) GetUserPurchases(userId int64) ([]ProductPurchase, error) {
 	results, err := p.conn.Query(context.Background(), `
-	SELECT repo_id, isoneoff, unixts, prod_name, price, url
+	SELECT repo_id, isoneoff, unixts, prod_name, price, url, pur.id
 	FROM purchases pur
 	JOIN products p ON pur.product_id = p.id
 	WHERE userid = $1
@@ -404,7 +406,7 @@ func (p *postgresManager) GetUserPurchases(userId int64) ([]ProductPurchase, err
 			return nil, err
 		}
 
-		if len(anySlice) != 6 {
+		if len(anySlice) != 7 {
 			return nil, fmt.Errorf("invalid row structure returned")
 		}
 
@@ -438,7 +440,13 @@ func (p *postgresManager) GetUserPurchases(userId int64) ([]ProductPurchase, err
 			return nil, fmt.Errorf("invalid row structure returned, on 5th column")
 		}
 
+		id, ok := anySlice[6].(int64)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on 5th column")
+		}
+
 		purchases = append(purchases, ProductPurchase{
+			Id:       id,
 			RepoId:   repoId,
 			ProdName: prodName,
 			UnixTs:   unixTs,
@@ -450,4 +458,33 @@ func (p *postgresManager) GetUserPurchases(userId int64) ([]ProductPurchase, err
 	}
 
 	return purchases, nil
+}
+
+func (p *postgresManager) GetPaymentId(id int64) (string, error) {
+	sql := "SELECT paymentid FROM purchases WHERE id = $1;"
+
+	result, err := p.conn.Query(context.Background(), sql, id)
+	if err != nil {
+		return "", err
+	}
+
+	if !result.Next() {
+		return "", fmt.Errorf("not data returned in GetPriceId")
+	}
+
+	anySlice, err := result.Values()
+	if err != nil {
+		return "", err
+	}
+
+	if len(anySlice) != 1 {
+		return "", fmt.Errorf("invalid row structure returned in GetPriceId")
+	}
+
+	payId, ok := anySlice[0].(string)
+	if !ok {
+		return "", fmt.Errorf("invalid row structure returned, on paymentId column in GetPriceId")
+	}
+
+	return payId, nil
 }

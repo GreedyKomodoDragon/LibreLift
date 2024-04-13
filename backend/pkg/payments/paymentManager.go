@@ -7,12 +7,14 @@ import (
 	"github.com/stripe/stripe-go/v76/checkout/session"
 	"github.com/stripe/stripe-go/v76/price"
 	"github.com/stripe/stripe-go/v76/product"
+	"github.com/stripe/stripe-go/v76/subscription"
 )
 
 type PaymentsManager interface {
 	CreateCheckoutSession(priceId string, subcription bool, metadata map[string]string) (string, error)
 	GetSessionStatus(sessionId string) (status string, email string, err error)
 	CreateProductForRepo(repoid int64, productName string, productPrice int64) (string, string, error)
+	CancelSubscription(payId string) error
 }
 
 type stripeManager struct {
@@ -115,4 +117,10 @@ func (s *stripeManager) createMonthlyProductPrice(productId *string, productPric
 	}
 
 	return priceResult.ID, nil
+}
+
+func (s *stripeManager) CancelSubscription(payId string) error {
+	params := &stripe.SubscriptionParams{CancelAtPeriodEnd: stripe.Bool(true)}
+	_, err := subscription.Update(payId, params)
+	return err
 }

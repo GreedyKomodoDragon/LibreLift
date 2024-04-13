@@ -5,6 +5,7 @@ import (
 	"librelift/pkg/db"
 	"librelift/pkg/payments"
 	"strconv"
+	"strings"
 )
 
 type ProductsManager interface {
@@ -16,6 +17,7 @@ type ProductsManager interface {
 	GetPriceId(repoId, prodId int64, isSubscription bool) (string, error)
 	AddPurchase(metadata map[string]string, purchaseTime int64, paymentId string) error
 	GetUserPurchases(userId int64) ([]db.ProductPurchase, error)
+	GetPaymentId(id int64) (string, error)
 }
 
 type productsManager struct {
@@ -105,4 +107,17 @@ func (p *productsManager) AddPurchase(metadata map[string]string, purchaseTime i
 
 func (p *productsManager) GetUserPurchases(userId int64) ([]db.ProductPurchase, error) {
 	return p.dbManager.GetUserPurchases(userId)
+}
+
+func (p *productsManager) GetPaymentId(id int64) (string, error) {
+	payId, err := p.dbManager.GetPaymentId(id)
+	if err != nil {
+		return "", err
+	}
+
+	if !strings.HasPrefix(payId, "sub_") {
+		return "", fmt.Errorf("purchase is not a subscription")
+	}
+
+	return payId, nil
 }
