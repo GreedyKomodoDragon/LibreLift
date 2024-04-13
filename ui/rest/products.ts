@@ -56,6 +56,7 @@ export async function addProductToRepo(productId: number, repoId: number) {
 }
 
 export type Purchases = {
+  id: number;
   repoId: number;
   isOneOff: boolean;
   unixTS: number;
@@ -73,4 +74,13 @@ export async function GetPurchases(): Promise<Purchases[]> {
   );
 
   return results.data.products;
+}
+
+export async function CancelSubscription(id: number) {
+  await axios.delete(
+    `http://127.0.0.1:8080/api/v1/payments/subscription/${id}`,
+    {
+      withCredentials: true,
+    }
+  );
 }

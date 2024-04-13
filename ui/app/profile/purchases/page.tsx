@@ -1,11 +1,13 @@
 "use client";
 
-import { GetPurchases } from "@/rest/products";
+import Toast from "@/components/toast";
+import { CancelSubscription, GetPurchases } from "@/rest/products";
 import { useQuery } from "@tanstack/react-query";
 import React, { useState } from "react";
 
 interface Purchase {
   id: number;
+  repoId: number;
   name: string;
   unixTS: number;
   amount: string;
@@ -14,33 +16,53 @@ interface Purchase {
 
 const PurchaseItem: React.FC<Purchase> = ({
   id,
+  repoId,
   name,
   unixTS,
   amount,
   type,
 }) => {
+  const [error, setError] = useState<boolean>(false);
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-4 transition-transform duration-200 transform hover:scale-[1.005]">
-      <div className="flex justify-between items-center">
-        <div className="flex flex-col">
-          <p className="text-lg font-semibold">{name}</p>
-          <p className="text-gray-500">Repo: {id}</p>
-          <p className="text-gray-500">
-            {new Date(unixTS).toLocaleDateString()}
-          </p>
+    <>
+      <div className="bg-white rounded-lg shadow-md p-4 mb-4 transition-transform duration-200 transform hover:scale-[1.005]">
+        <div className="flex justify-between items-center">
+          <div className="flex flex-col">
+            <p className="text-lg font-semibold">{name}</p>
+            <p className="text-gray-500">Repo: {repoId}</p>
+            <p className="text-gray-500">
+              {new Date(unixTS).toLocaleDateString()}
+            </p>
+          </div>
+          <div className="text-2xl font-semibold">{amount}</div>
         </div>
-        <div className="text-2xl font-semibold">{amount}</div>
+        {type === "subscription" && (
+          <div className="flex justify-between w-full mt-1">
+            <div></div>{" "}
+            {/* This empty div helps in pushing the amount to the right */}
+            <button
+              className="bg-black rounded-md p-2 text-white text-sm font-semibold"
+              onClick={() => {
+                CancelSubscription(id).catch((err) => {
+                  console.error(err);
+                });
+              }}
+            >
+              Cancel Subscription
+            </button>
+          </div>
+        )}
       </div>
-      {type === "subscription" && (
-        <div className="flex justify-between w-full mt-1">
-          <div></div>{" "}
-          {/* This empty div helps in pushing the amount to the right */}
-          <button className="bg-black rounded-md p-2 text-white text-sm font-semibold">
-            Cancel Subscription
-          </button>
-        </div>
+      {error && (
+        <Toast
+          message={
+            "Failed to delete your subscription, try again soon or contact support"
+          }
+          onClose={() => setError(false)}
+          position="top-middle"
+        />
       )}
-    </div>
+    </>
   );
 };
 
@@ -65,18 +87,17 @@ const PurchasesPage: React.FC = () => {
       return data;
     }
 
-    return data
-      .filter((purchase) => {
-        switch (filter) {
-          case "one-off":
-            return purchase.isOneOff;
+    return data.filter((purchase) => {
+      switch (filter) {
+        case "one-off":
+          return purchase.isOneOff;
 
-          case "subscription":
-            return !purchase.isOneOff;
-          default:
-            return "";
-        }
-      });
+        case "subscription":
+          return !purchase.isOneOff;
+        default:
+          return "";
+      }
+    });
   };
 
   return (
@@ -115,7 +136,8 @@ const PurchasesPage: React.FC = () => {
             <PurchaseItem
               key={purchase.repoId}
               name={purchase.prodName}
-              id={purchase.repoId}
+              id={purchase.id}
+              repoId={purchase.repoId}
               unixTS={purchase.unixTS * 1000}
               amount={`$${purchase.price / 100}`}
               type={purchase.isOneOff ? "one-off" : "subscription"}
