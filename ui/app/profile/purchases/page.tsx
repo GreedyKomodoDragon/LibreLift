@@ -1,9 +1,15 @@
 "use client";
 
+import LoadingButton from "@/components/loadingButton";
 import Toast from "@/components/toast";
-import { CancelSubscription, GetPurchases } from "@/rest/products";
-import { useQuery } from "@tanstack/react-query";
+import {
+  CancelSubscription,
+  GetPurchases,
+  RenableSubscription,
+} from "@/rest/products";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
+import { ThreeDots } from "react-loader-spinner";
 
 interface Purchase {
   id: number;
@@ -13,6 +19,7 @@ interface Purchase {
   amount: string;
   type: "one-off" | "subscription";
   status: string;
+  invalidate: () => void;
 }
 
 const PurchaseItem: React.FC<Purchase> = ({
@@ -23,6 +30,7 @@ const PurchaseItem: React.FC<Purchase> = ({
   amount,
   type,
   status,
+  invalidate,
 }) => {
   const [error, setError] = useState<string>("");
   return (
@@ -42,33 +50,36 @@ const PurchaseItem: React.FC<Purchase> = ({
           <div className="flex justify-between w-full mt-1">
             <div></div>{" "}
             {/* This empty div helps in pushing the amount to the right */}
-            <button
-              className="bg-red-700 rounded-md p-2 text-white text-sm font-semibold"
-              onClick={() => {
-                CancelSubscription(id).catch(() => {
+            <LoadingButton
+              buttonColor={"red"}
+              message={"Cancel Subscription"}
+              onClick={async () => {
+                try {
+                  await CancelSubscription(id);
+                  invalidate();
+                } catch {
                   setError("failed to cancel subscription");
-                });
+                }
               }}
-            >
-              Cancel Subscription
-            </button>
+            />
           </div>
         )}
 
         {type === "subscription" && status == "pending" && (
           <div className="flex justify-between w-full mt-1">
             <div></div>{" "}
-            {/* This empty div helps in pushing the amount to the right */}
-            <button
-              className="bg-green-700 rounded-md p-2 text-white text-sm font-semibold"
-              onClick={() => {
-                // CancelSubscription(id).catch((err) => {
-                //   console.error(err);
-                // });
+            <LoadingButton
+              buttonColor={"green"}
+              message={"Re-enable Subscription"}
+              onClick={async () => {
+                try {
+                  await RenableSubscription(id);
+                  invalidate();
+                } catch {
+                  setError("failed to re-enable subscription");
+                }
               }}
-            >
-              Re-enable Subscription
-            </button>
+            />
           </div>
         )}
       </div>
@@ -86,6 +97,7 @@ const PurchaseItem: React.FC<Purchase> = ({
 };
 
 const PurchasesPage: React.FC = () => {
+  const queryClient = useQueryClient();
   const { isPending, error, data } = useQuery({
     refetchInterval: 0,
     queryKey: ["purchases"],
@@ -161,8 +173,22 @@ const PurchasesPage: React.FC = () => {
               amount={`$${purchase.price / 100}`}
               type={purchase.isOneOff ? "one-off" : "subscription"}
               status={purchase.status}
+              invalidate={() => {
+                // TODO: Update this so it fetches only the new one, not the all the purchases
+                queryClient.invalidateQueries({ queryKey: ["purchases"] });
+              }}
             />
           ))}
+        <ThreeDots
+          visible={isPending}
+          height="80"
+          width="80"
+          color="#4fa94d"
+          radius="9"
+          ariaLabel="three-dots-loading"
+          wrapperStyle={{}}
+          wrapperClass=""
+        />
       </div>
     </div>
   );

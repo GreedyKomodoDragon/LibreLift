@@ -85,3 +85,13 @@ export async function CancelSubscription(id: number) {
     }
   );
 }
+
+export async function RenableSubscription(id: number) {
+  await axios.put(
+    `http://127.0.0.1:8080/api/v1/payments/subscription/${id}/enable`,
+    {},
+    {
+      withCredentials: true,
+    }
+  );
+}
