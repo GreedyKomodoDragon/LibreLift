@@ -21,6 +21,8 @@ type DBManager interface {
 	AddPurchase(userId, repoId, productId, purchaseTime int64, isSub bool, paymentId string) error
 	GetUserPurchases(userId int64) ([]ProductPurchase, error)
 	GetPaymentId(id int64) (string, error)
+	UpdateSubScriptionToPending(id string) error
+	EndSubscription(id string) error
 }
 
 type postgresManager struct {
@@ -57,6 +59,7 @@ type ProductPurchase struct {
 	ProdName string `json:"prodName"`
 	Price    int64  `json:"price"`
 	Url      string `json:"url"`
+	Status   string `json:"status"`
 }
 
 func NewDBManager(connectionURL string) (DBManager, error) {
@@ -101,8 +104,7 @@ func (p *postgresManager) GetUsersRepos(username int64) ([]int64, error) {
 			case int64:
 				ids = append(ids, val)
 			default:
-				// Handle unsupported types or unexpected data
-				fmt.Printf("Unsupported type at index %d: %T\n", i, v)
+				log.Error().Err(err).Int("index", i).Interface("value", v).Msg("Unsupported type")
 			}
 		}
 
@@ -382,13 +384,13 @@ func (p *postgresManager) GetPriceId(repoId, prodId int64, isSubscription bool) 
 }
 
 func (p *postgresManager) AddPurchase(userId, repoId, productId, purchaseTime int64, isSub bool, paymentId string) error {
-	_, err := p.conn.Exec(context.Background(), "INSERT INTO purchases (repo_id, userId, product_id, isOneOff, unixTS, paymentId) VALUES ($1, $2, $3, $4, $5, $6);", repoId, userId, productId, !isSub, purchaseTime, paymentId)
+	_, err := p.conn.Exec(context.Background(), "INSERT INTO purchases (repo_id, userId, product_id, isOneOff, unixTS, paymentId, stat) VALUES ($1, $2, $3, $4, $5, $6, 'active');", repoId, userId, productId, !isSub, purchaseTime, paymentId)
 	return err
 }
 
 func (p *postgresManager) GetUserPurchases(userId int64) ([]ProductPurchase, error) {
 	results, err := p.conn.Query(context.Background(), `
-	SELECT repo_id, isoneoff, unixts, prod_name, price, url, pur.id
+	SELECT repo_id, isoneoff, unixts, prod_name, price, url, pur.id, stat
 	FROM purchases pur
 	JOIN products p ON pur.product_id = p.id
 	WHERE userid = $1
@@ -406,7 +408,7 @@ func (p *postgresManager) GetUserPurchases(userId int64) ([]ProductPurchase, err
 			return nil, err
 		}
 
-		if len(anySlice) != 7 {
+		if len(anySlice) != 8 {
 			return nil, fmt.Errorf("invalid row structure returned")
 		}
 
@@ -445,6 +447,11 @@ func (p *postgresManager) GetUserPurchases(userId int64) ([]ProductPurchase, err
 			return nil, fmt.Errorf("invalid row structure returned, on 5th column")
 		}
 
+		stat, ok := anySlice[7].(string)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on 5th column")
+		}
+
 		purchases = append(purchases, ProductPurchase{
 			Id:       id,
 			RepoId:   repoId,
@@ -453,6 +460,7 @@ func (p *postgresManager) GetUserPurchases(userId int64) ([]ProductPurchase, err
 			IsOneOff: isOneOff,
 			Price:    price,
 			Url:      url,
+			Status:   stat,
 		})
 
 	}
@@ -487,4 +495,34 @@ func (p *postgresManager) GetPaymentId(id int64) (string, error) {
 	}
 
 	return payId, nil
+}
+
+func (p *postgresManager) UpdateSubScriptionToPending(id string) error {
+	sql := "UPDATE purchases SET stat = 'pending' WHERE paymentId = $1 AND stat = 'active';"
+
+	result, err := p.conn.Exec(context.Background(), sql, id)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("unable to find and update row")
+	}
+
+	return err
+}
+
+func (p *postgresManager) EndSubscription(id string) error {
+	sql := "UPDATE purchases SET stat = 'refunded' WHERE paymentId = $1 AND stat = 'pending';"
+
+	result, err := p.conn.Exec(context.Background(), sql, id)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("unable to find and update row")
+	}
+
+	return err
 }

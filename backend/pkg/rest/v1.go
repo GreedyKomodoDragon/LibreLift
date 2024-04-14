@@ -2,7 +2,6 @@ package rest
 
 import (
 	"encoding/json"
-	"fmt"
 	"librelift/pkg/auth"
 	"librelift/pkg/payments"
 	"librelift/pkg/products"
@@ -389,8 +388,20 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 
+		case "customer.subscription.deleted":
+			var subscriptionDeleted stripe.Subscription
+			if err := json.Unmarshal(event.Data.Raw, &subscriptionDeleted); err != nil {
+				log.Error().Str("eventType", "customer.subscription.deleted").Err(err).Msg("Invalid Event unmarshalling")
+				return c.SendStatus(fiber.StatusInternalServerError)
+			}
+
+			if err := paymentManager.CancelSubscription(subscriptionDeleted.ID); err != nil {
+				log.Error().Str("eventType", "checkout.session.completed").Err(err).Msg("failed to add product update")
+				return c.SendStatus(fiber.StatusInternalServerError)
+			}
+
 		default:
-			fmt.Fprintf(os.Stderr, "Unhandled event type: %s\n", event.Type)
+			log.Error().Str("eventType", string(event.Type)).Err(err).Msg("unhandled event type")
 		}
 
 		return c.SendStatus(fiber.StatusOK)
@@ -408,7 +419,7 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		if err := paymentManager.CancelSubscription(payId); err != nil {
+		if err := paymentManager.UpdateSubScriptionToPending(payId); err != nil {
 			log.Error().Int64("productID", id).Str("paymentId", payId).Err(err).Msg("failed to cancel subscription")
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}

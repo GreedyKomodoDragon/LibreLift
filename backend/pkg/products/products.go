@@ -17,6 +17,7 @@ type ProductsManager interface {
 	GetPriceId(repoId, prodId int64, isSubscription bool) (string, error)
 	AddPurchase(metadata map[string]string, purchaseTime int64, paymentId string) error
 	GetUserPurchases(userId int64) ([]db.ProductPurchase, error)
+	// TODO: Refactor this into Payment Manager
 	GetPaymentId(id int64) (string, error)
 }
 

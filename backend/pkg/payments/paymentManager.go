@@ -2,6 +2,8 @@ package payments
 
 import (
 	"fmt"
+	"librelift/pkg/db"
+	"strings"
 
 	"github.com/stripe/stripe-go/v76"
 	"github.com/stripe/stripe-go/v76/checkout/session"
@@ -15,14 +17,18 @@ type PaymentsManager interface {
 	GetSessionStatus(sessionId string) (status string, email string, err error)
 	CreateProductForRepo(repoid int64, productName string, productPrice int64) (string, string, error)
 	CancelSubscription(payId string) error
+	UpdateSubScriptionToPending(id string) error
 }
 
 type stripeManager struct {
+	dbManager db.DBManager
 }
 
-func NewStripeManager(key string) PaymentsManager {
+func NewStripeManager(key string, db db.DBManager) PaymentsManager {
 	stripe.Key = key
-	return &stripeManager{}
+	return &stripeManager{
+		dbManager: db,
+	}
 }
 
 func (s *stripeManager) CreateCheckoutSession(priceId string, subcription bool, metadata map[string]string) (string, error) {
@@ -120,7 +126,26 @@ func (s *stripeManager) createMonthlyProductPrice(productId *string, productPric
 }
 
 func (s *stripeManager) CancelSubscription(payId string) error {
+	if !strings.HasPrefix(payId, "sub_") {
+		return fmt.Errorf("purchase is not a subscription")
+	}
+
 	params := &stripe.SubscriptionParams{CancelAtPeriodEnd: stripe.Bool(true)}
-	_, err := subscription.Update(payId, params)
-	return err
+	if _, err := subscription.Update(payId, params); err != nil {
+		return err
+	}
+
+	if err := s.dbManager.UpdateSubScriptionToPending(payId); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *stripeManager) UpdateSubScriptionToPending(payId string) error {
+	if !strings.HasPrefix(payId, "sub_") {
+		return fmt.Errorf("purchase is not a subscription")
+	}
+
+	return s.dbManager.UpdateSubScriptionToPending(payId)
 }

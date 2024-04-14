@@ -87,14 +87,14 @@ func main() {
 
 	log.Info().Msg("elasticsearch was connected")
 
-	paymentManager := payments.NewStripeManager(stripeKey)
-	searchManager := search.NewElasticsearchManager(es)
-	authManager := auth.NewAuthManager(clientID, clientSecret)
-
 	pg, err := db.NewDBManager("postgres://myuser:mypassword@localhost:5432/mydatabase")
 	if err != nil {
 		panic(err)
 	}
+
+	paymentManager := payments.NewStripeManager(stripeKey, pg)
+	searchManager := search.NewElasticsearchManager(es)
+	authManager := auth.NewAuthManager(clientID, clientSecret)
 
 	projectManager := projects.NewProjectManager(pg)
 	productManager := products.NewProductManager(pg, paymentManager)
