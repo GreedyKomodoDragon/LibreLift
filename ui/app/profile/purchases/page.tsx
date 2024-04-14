@@ -12,6 +12,7 @@ interface Purchase {
   unixTS: number;
   amount: string;
   type: "one-off" | "subscription";
+  status: string;
 }
 
 const PurchaseItem: React.FC<Purchase> = ({
@@ -21,8 +22,9 @@ const PurchaseItem: React.FC<Purchase> = ({
   unixTS,
   amount,
   type,
+  status,
 }) => {
-  const [error, setError] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
   return (
     <>
       <div className="bg-white rounded-lg shadow-md p-4 mb-4 transition-transform duration-200 transform hover:scale-[1.005]">
@@ -36,19 +38,36 @@ const PurchaseItem: React.FC<Purchase> = ({
           </div>
           <div className="text-2xl font-semibold">{amount}</div>
         </div>
-        {type === "subscription" && (
+        {type === "subscription" && status == "active" && (
           <div className="flex justify-between w-full mt-1">
             <div></div>{" "}
             {/* This empty div helps in pushing the amount to the right */}
             <button
-              className="bg-black rounded-md p-2 text-white text-sm font-semibold"
+              className="bg-red-700 rounded-md p-2 text-white text-sm font-semibold"
               onClick={() => {
-                CancelSubscription(id).catch((err) => {
-                  console.error(err);
+                CancelSubscription(id).catch(() => {
+                  setError("failed to cancel subscription");
                 });
               }}
             >
               Cancel Subscription
+            </button>
+          </div>
+        )}
+
+        {type === "subscription" && status == "pending" && (
+          <div className="flex justify-between w-full mt-1">
+            <div></div>{" "}
+            {/* This empty div helps in pushing the amount to the right */}
+            <button
+              className="bg-green-700 rounded-md p-2 text-white text-sm font-semibold"
+              onClick={() => {
+                // CancelSubscription(id).catch((err) => {
+                //   console.error(err);
+                // });
+              }}
+            >
+              Re-enable Subscription
             </button>
           </div>
         )}
@@ -58,7 +77,7 @@ const PurchaseItem: React.FC<Purchase> = ({
           message={
             "Failed to delete your subscription, try again soon or contact support"
           }
-          onClose={() => setError(false)}
+          onClose={() => setError("")}
           position="top-middle"
         />
       )}
@@ -141,6 +160,7 @@ const PurchasesPage: React.FC = () => {
               unixTS={purchase.unixTS * 1000}
               amount={`$${purchase.price / 100}`}
               type={purchase.isOneOff ? "one-off" : "subscription"}
+              status={purchase.status}
             />
           ))}
       </div>

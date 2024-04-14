@@ -63,6 +63,7 @@ export type Purchases = {
   prodName: string;
   price: number;
   url: string;
+  status: string;
 };
 
 export async function GetPurchases(): Promise<Purchases[]> {
