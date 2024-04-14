@@ -18,6 +18,7 @@ type PaymentsManager interface {
 	CreateProductForRepo(repoid int64, productName string, productPrice int64) (string, string, error)
 	CancelSubscription(payId string) error
 	UpdateSubScriptionToPending(id string) error
+	EnableSubscription(id string) error
 }
 
 type stripeManager struct {
@@ -130,12 +131,7 @@ func (s *stripeManager) CancelSubscription(payId string) error {
 		return fmt.Errorf("purchase is not a subscription")
 	}
 
-	params := &stripe.SubscriptionParams{CancelAtPeriodEnd: stripe.Bool(true)}
-	if _, err := subscription.Update(payId, params); err != nil {
-		return err
-	}
-
-	if err := s.dbManager.UpdateSubScriptionToPending(payId); err != nil {
+	if err := s.dbManager.EndSubscription(payId); err != nil {
 		return err
 	}
 
@@ -147,5 +143,23 @@ func (s *stripeManager) UpdateSubScriptionToPending(payId string) error {
 		return fmt.Errorf("purchase is not a subscription")
 	}
 
+	params := &stripe.SubscriptionParams{CancelAtPeriodEnd: stripe.Bool(true)}
+	if _, err := subscription.Update(payId, params); err != nil {
+		return err
+	}
+
 	return s.dbManager.UpdateSubScriptionToPending(payId)
+}
+
+func (s *stripeManager) EnableSubscription(payId string) error {
+	if !strings.HasPrefix(payId, "sub_") {
+		return fmt.Errorf("purchase is not a subscription")
+	}
+
+	params := &stripe.SubscriptionParams{CancelAtPeriodEnd: stripe.Bool(false)}
+	if _, err := subscription.Update(payId, params); err != nil {
+		return err
+	}
+
+	return s.dbManager.EnableSubscription(payId)
 }

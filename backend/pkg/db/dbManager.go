@@ -23,6 +23,7 @@ type DBManager interface {
 	GetPaymentId(id int64) (string, error)
 	UpdateSubScriptionToPending(id string) error
 	EndSubscription(id string) error
+	EnableSubscription(id string) error
 }
 
 type postgresManager struct {
@@ -514,6 +515,21 @@ func (p *postgresManager) UpdateSubScriptionToPending(id string) error {
 
 func (p *postgresManager) EndSubscription(id string) error {
 	sql := "UPDATE purchases SET stat = 'refunded' WHERE paymentId = $1 AND stat = 'pending';"
+
+	result, err := p.conn.Exec(context.Background(), sql, id)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("unable to find and update row")
+	}
+
+	return err
+}
+
+func (p *postgresManager) EnableSubscription(id string) error {
+	sql := "UPDATE purchases SET stat = 'active' WHERE paymentId = $1 AND stat = 'pending';"
 
 	result, err := p.conn.Exec(context.Background(), sql, id)
 	if err != nil {

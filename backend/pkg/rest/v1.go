@@ -426,4 +426,24 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 
 		return c.SendStatus(fiber.StatusOK)
 	})
+
+	paymentRouter.Put("/subscription/:id/enable", func(c *fiber.Ctx) error {
+		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		payId, err := productManager.GetPaymentId(id)
+		if err != nil {
+			log.Error().Int64("productID", id).Err(err).Msg("failed to cancel subscription")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if err := paymentManager.EnableSubscription(payId); err != nil {
+			log.Error().Int64("productID", id).Str("paymentId", payId).Err(err).Msg("failed to re-enable subscription")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.SendStatus(fiber.StatusOK)
+	})
 }
