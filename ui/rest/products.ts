@@ -95,3 +95,13 @@ export async function RenableSubscription(id: number) {
     }
   );
 }
+
+export async function RequestRefund(id: number) {
+  await axios.post(
+    `http://127.0.0.1:8080/api/v1/payments/oneoff/${id}/refund`,
+    {},
+    {
+      withCredentials: true,
+    }
+  );
+}

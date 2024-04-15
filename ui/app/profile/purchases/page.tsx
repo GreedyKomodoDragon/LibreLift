@@ -6,11 +6,18 @@ import {
   CancelSubscription,
   GetPurchases,
   RenableSubscription,
+  RequestRefund,
 } from "@/rest/products";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import { ThreeDots } from "react-loader-spinner";
 
+function isWithinTwoWeeksFuture(unixTime: number): boolean {
+  const now = Math.floor(Date.now());
+  const twoWeeksInSeconds = 2 * 7 * 24 * 60 * 60; // Two weeks in seconds
+
+  return unixTime - twoWeeksInSeconds < now;
+}
 interface Purchase {
   id: number;
   repoId: number;
@@ -46,6 +53,36 @@ const PurchaseItem: React.FC<Purchase> = ({
           </div>
           <div className="text-2xl font-semibold">{amount}</div>
         </div>
+        {type === "one-off" &&
+          status == "active" &&
+          isWithinTwoWeeksFuture(unixTS) && (
+            <div className="flex justify-between w-full mt-1">
+              <div></div>{" "}
+              <LoadingButton
+                buttonColor={"red"}
+                message={"Request a refund"}
+                onClick={async () => {
+                  try {
+                    await RequestRefund(id);
+                    invalidate();
+                  } catch {
+                    setError("failed to cancel subscription");
+                  }
+                }}
+              />
+            </div>
+          )}
+
+        {type === "one-off" && status == "pending" && (
+          <div className="flex justify-between w-full mt-1">
+            <div></div>{" "}
+            {/* This empty div helps in pushing the amount to the right */}
+            <p className="bg-green-700 p-2 text-white rounded-sm">
+              Refund in progress
+            </p>
+          </div>
+        )}
+
         {type === "subscription" && status == "active" && (
           <div className="flex justify-between w-full mt-1">
             <div></div>{" "}
@@ -85,9 +122,7 @@ const PurchaseItem: React.FC<Purchase> = ({
       </div>
       {error && (
         <Toast
-          message={
-            "Failed to delete your subscription, try again soon or contact support"
-          }
+          message={error}
           onClose={() => setError("")}
           position="top-middle"
         />
@@ -115,10 +150,16 @@ const PurchasesPage: React.FC = () => {
     }
 
     if (filter === "all") {
-      return data;
+      return data.filter((purchase) => {
+        return purchase.status !== "refunded";
+      });
     }
 
     return data.filter((purchase) => {
+      if (purchase.status === "refunded") {
+        return false;
+      }
+
       switch (filter) {
         case "one-off":
           return purchase.isOneOff;
