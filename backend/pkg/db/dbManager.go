@@ -24,6 +24,9 @@ type DBManager interface {
 	UpdateSubScriptionToPending(id string) error
 	EndSubscription(id string) error
 	EnableSubscription(id string) error
+	GetRefundablePaymentId(id int64) (string, error)
+	SetPaymentToPending(id int64) error
+	UpdatePaymentToRefunded(id string) error
 }
 
 type postgresManager struct {
@@ -530,6 +533,73 @@ func (p *postgresManager) EndSubscription(id string) error {
 
 func (p *postgresManager) EnableSubscription(id string) error {
 	sql := "UPDATE purchases SET stat = 'active' WHERE paymentId = $1 AND stat = 'pending';"
+
+	result, err := p.conn.Exec(context.Background(), sql, id)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("unable to find and update row")
+	}
+
+	return err
+}
+
+func (p *postgresManager) GetRefundablePaymentId(id int64) (string, error) {
+	// 1209600 - is two weeks
+	// TODO: Make this an env variable
+	sql := `
+	SELECT paymentid FROM purchases 
+	WHERE isoneoff = true 
+		AND (unixts + (1209600)) > (SELECT extract(epoch from now()))
+		AND id = $1
+		AND stat = 'active'
+	LIMIT 1;`
+
+	result, err := p.conn.Query(context.Background(), sql, id)
+	if err != nil {
+		return "", err
+	}
+
+	if !result.Next() {
+		return "", fmt.Errorf("not data returned, cannot find a refundable paymentId")
+	}
+
+	anySlice, err := result.Values()
+	if err != nil {
+		return "", err
+	}
+
+	if len(anySlice) != 1 {
+		return "", fmt.Errorf("invalid row structure returned in GetPriceId")
+	}
+
+	payId, ok := anySlice[0].(string)
+	if !ok {
+		return "", fmt.Errorf("invalid row structure returned, on paymentId column in GetPriceId")
+	}
+
+	return payId, nil
+}
+
+func (p *postgresManager) SetPaymentToPending(id int64) error {
+	sql := "UPDATE purchases SET stat = 'pending' WHERE id = $1 AND stat = 'active';"
+
+	result, err := p.conn.Exec(context.Background(), sql, id)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("unable to find and update row")
+	}
+
+	return err
+}
+
+func (p *postgresManager) UpdatePaymentToRefunded(id string) error {
+	sql := "UPDATE purchases SET stat = 'refunded' WHERE paymentId = $1 AND stat = 'pending';"
 
 	result, err := p.conn.Exec(context.Background(), sql, id)
 	if err != nil {

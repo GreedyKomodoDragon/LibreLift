@@ -9,6 +9,7 @@ import (
 	"github.com/stripe/stripe-go/v76/checkout/session"
 	"github.com/stripe/stripe-go/v76/price"
 	"github.com/stripe/stripe-go/v76/product"
+	"github.com/stripe/stripe-go/v76/refund"
 	"github.com/stripe/stripe-go/v76/subscription"
 )
 
@@ -19,6 +20,10 @@ type PaymentsManager interface {
 	CancelSubscription(payId string) error
 	UpdateSubScriptionToPending(id string) error
 	EnableSubscription(id string) error
+	GetRefundablePaymentId(id int64) (string, error)
+	RequestRefund(payId string) error
+	SetPaymentToPending(id int64) error
+	UpdatePaymentToRefunded(id string) error
 }
 
 type stripeManager struct {
@@ -162,4 +167,22 @@ func (s *stripeManager) EnableSubscription(payId string) error {
 	}
 
 	return s.dbManager.EnableSubscription(payId)
+}
+
+func (s *stripeManager) GetRefundablePaymentId(id int64) (string, error) {
+	return s.dbManager.GetRefundablePaymentId(id)
+}
+
+func (s *stripeManager) RequestRefund(payId string) error {
+	params := &stripe.RefundParams{PaymentIntent: stripe.String(payId)}
+	_, err := refund.New(params)
+	return err
+}
+
+func (s *stripeManager) SetPaymentToPending(id int64) error {
+	return s.dbManager.SetPaymentToPending(id)
+}
+
+func (s *stripeManager) UpdatePaymentToRefunded(id string) error {
+	return s.dbManager.UpdatePaymentToRefunded(id)
 }

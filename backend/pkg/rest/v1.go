@@ -368,6 +368,11 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 			return c.SendStatus(fiber.StatusForbidden)
 		}
 
+		if event.Data == nil {
+			log.Error().Msg("missing data in event")
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
 		switch event.Type {
 		case "checkout.session.completed":
 			var checkoutSession stripe.CheckoutSession
@@ -397,6 +402,23 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 
 			if err := paymentManager.CancelSubscription(subscriptionDeleted.ID); err != nil {
 				log.Error().Str("eventType", "checkout.session.completed").Err(err).Msg("failed to add product update")
+				return c.SendStatus(fiber.StatusInternalServerError)
+			}
+
+		case "charge.refunded":
+			var chargeRefunded stripe.Refund
+			if err := json.Unmarshal(event.Data.Raw, &chargeRefunded); err != nil {
+				log.Error().Str("eventType", "charge.refunded").Err(err).Msg("Invalid Event unmarshalling")
+				return c.SendStatus(fiber.StatusInternalServerError)
+			}
+
+			if chargeRefunded.PaymentIntent == nil {
+				log.Error().Str("eventType", "charge.refunded").Msg("unable to get payment intent id")
+				return c.SendStatus(fiber.StatusBadRequest)
+			}
+
+			if err := paymentManager.UpdatePaymentToRefunded(chargeRefunded.PaymentIntent.ID); err != nil {
+				log.Error().Str("eventType", "charge.refunded").Str("paymentIntent", chargeRefunded.PaymentIntent.ID).Err(err).Msg("failed to set product to refunded")
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 
@@ -441,6 +463,31 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 
 		if err := paymentManager.EnableSubscription(payId); err != nil {
 			log.Error().Int64("productID", id).Str("paymentId", payId).Err(err).Msg("failed to re-enable subscription")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.SendStatus(fiber.StatusOK)
+	})
+
+	paymentRouter.Post("/oneoff/:id/refund", func(c *fiber.Ctx) error {
+		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		payId, err := paymentManager.GetRefundablePaymentId(id)
+		if err != nil {
+			log.Error().Int64("productID", id).Err(err).Msg("failed to cancel subscription")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if err := paymentManager.RequestRefund(payId); err != nil {
+			log.Error().Int64("productID", id).Str("paymentId", payId).Err(err).Msg("failed to re-enable subscription")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if err := paymentManager.SetPaymentToPending(id); err != nil {
+			log.Error().Int64("productID", id).Err(err).Msg("failed to set payment to pending")
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
