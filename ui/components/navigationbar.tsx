@@ -5,17 +5,21 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { FormEventHandler, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { getAvatarURL } from "@/rest/auth";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getAvatarURL, logout } from "@/rest/auth";
 import LoadingSpinner from "./LoadingSpinner";
+import Cookies from "universal-cookie";
 
 export default function NavigationBar() {
   const pathname = usePathname();
+
   const [isOpen, setIsOpen] = useState(false);
   const [term, setTerm] = useState<string>("");
 
   const popupRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  const queryClient = useQueryClient();
 
   const { isPending, error, data } = useQuery({
     queryKey: ["avatar"],
@@ -41,10 +45,6 @@ export default function NavigationBar() {
     };
   }, []);
 
-  if (pathname === "/login") {
-    return <></>;
-  }
-
   const goSearch: FormEventHandler<HTMLFormElement> = (event) => {
     event.preventDefault();
 
@@ -52,6 +52,10 @@ export default function NavigationBar() {
       router.push("/search?term=" + encodeURIComponent(term));
     }
   };
+
+  if (pathname === "/login") {
+    return <></>;
+  }
 
   return (
     <nav className="bg-black dark:bg-black w-full px-4 py-2 top-0">
@@ -122,7 +126,7 @@ export default function NavigationBar() {
               onClick={() => setIsOpen(!isOpen)}
             />
           )}
-          {!isPending && error && (
+          {!isPending && !data && (
             <button
               className="text-[#f8f9fa] text-sm font-medium bg-blue-500 px-3 py-2 rounded-md hover:bg-blue-600 transition duration-300"
               onClick={() => router.push("/login")}
@@ -163,6 +167,24 @@ export default function NavigationBar() {
                   onClick={() => setIsOpen(false)}
                 >
                   Settings
+                </Link>
+                <Link
+                  href="#"
+                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() =>
+                    logout()
+                      .then(() => {
+                        setIsOpen(false);
+                        queryClient.invalidateQueries({ queryKey: ["avatar"] });
+                        const cookies = new Cookies(null, { path: "/" });
+                        cookies.remove("librelift-token");
+                      })
+                      .catch(() => {
+                        console.error("failed to log out");
+                      })
+                  }
+                >
+                  Logout
                 </Link>
               </div>
             </div>

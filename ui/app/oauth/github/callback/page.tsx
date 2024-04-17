@@ -6,9 +6,11 @@ import Cookies from "universal-cookie";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { login } from "@/rest/auth";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Callback() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -21,6 +23,8 @@ export default function Callback() {
             router.push("/login?failed=true");
             return;
           }
+
+          queryClient.invalidateQueries({ queryKey: ["avatar"] });
 
           const cookies = new Cookies(null, { path: "/" });
           cookies.set("librelift-token", token);

@@ -1,4 +1,5 @@
 import axios from "axios";
+import Cookies from "universal-cookie";
 
 export async function getToken(): Promise<string> {
   const config = await fetch("/config.json");
@@ -41,4 +42,14 @@ export async function isLoggedIn(): Promise<boolean> {
   });
 
   return result.status === 200;
+}
+
+export async function logout() {
+  await axios.post(
+    "http://127.0.0.1:8080/api/v1/auth/logout",
+    {},
+    {
+      withCredentials: true,
+    }
+  );
 }
