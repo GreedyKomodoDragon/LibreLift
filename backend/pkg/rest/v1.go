@@ -96,6 +96,16 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 			"avatar": url,
 		})
 	})
+
+	authRouter.Post("/logout", func(c *fiber.Ctx) error {
+		token := c.Cookies("librelift-token")
+		if err := authManager.Logout(token); err != nil {
+			log.Error().Err(err).Msg("failed to log out")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.SendStatus(fiber.StatusOK)
+	})
 }
 
 func addProject(router fiber.Router, projectManager projects.ProjectManager, searchManager search.SearchManager) {
