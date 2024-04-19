@@ -1,14 +1,17 @@
 "use client";
 
+import AccountAlerts from "@/components/profile/AccountAlerts";
 /* eslint-disable @next/next/no-img-element */
 import RepoBlock from "@/components/profile/RepoBlock";
 import { debounce } from "@/lib/utils";
 import { GetRepos, Repo } from "@/rest/github";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 /* eslint-disable react/jsx-key */
 export default function Repostories() {
+  const router = useRouter();
   const { isPending, error, data } = useQuery({
     refetchInterval: 0,
     queryKey: ["repoData"],
@@ -49,6 +52,7 @@ export default function Repostories() {
 
   return (
     <div className="p-4">
+      <AccountAlerts />
       <h3 className="font-semibold whitespace-nowrap tracking-tight text-4xl">
         Your Public Repostories
         {/* Refresh Icon will go here, will need a tooltip as well */}

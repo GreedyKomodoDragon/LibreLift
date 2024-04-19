@@ -13,6 +13,7 @@ interface ToastProps {
   duration?: number;
   onCloseClick?: () => void;
   persistent?: boolean; // Allows making the Toast persistent
+  color?: "blue" | "green" | "red"; // Added color prop
 }
 
 const Toast: React.FC<ToastProps> = ({
@@ -21,6 +22,7 @@ const Toast: React.FC<ToastProps> = ({
   position = "bottom-right",
   duration = 5000,
   persistent = false,
+  color = "red", // Default color is red
 }) => {
   const [visible, setVisible] = useState(true);
   let timer: NodeJS.Timeout;
@@ -74,9 +76,21 @@ const Toast: React.FC<ToastProps> = ({
     }
   };
 
+  const getColorStyles = (): string => {
+    switch (color) {
+      case "blue":
+        return "bg-blue-800";
+      case "green":
+        return "bg-green-800";
+      case "red":
+      default:
+        return "bg-red-800";
+    }
+  };
+
   return (
     <div
-      className={`fixed bg-red-800 text-white p-4 rounded-md shadow-lg z-50 transition-opacity duration-300 ${
+      className={`fixed ${getColorStyles()} text-white p-4 rounded-md shadow-lg z-50 transition-opacity duration-300 ${
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       } ${getPositionStyles()} ${position === 'top-middle' && "mt-6"}`}
       onMouseEnter={handleMouseEnter}
