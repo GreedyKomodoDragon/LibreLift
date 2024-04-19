@@ -27,6 +27,9 @@ type DBManager interface {
 	GetRefundablePaymentId(id int64) (string, error)
 	SetPaymentToPending(id int64) error
 	UpdatePaymentToRefunded(id string) error
+	SavePaymentAccount(userId int64, paymentAccountId string) error
+	GetPaymentAccount(userId int64) (string, bool, error)
+	SetPaymentAccountToActive(id string) error
 }
 
 type postgresManager struct {
@@ -611,4 +614,68 @@ func (p *postgresManager) UpdatePaymentToRefunded(id string) error {
 	}
 
 	return err
+}
+
+func (p *postgresManager) SavePaymentAccount(userId int64, paymentAccountId string) error {
+	sql := "INSERT INTO paymentAccounts VALUES ($1, $2, FALSE);"
+
+	result, err := p.conn.Exec(context.Background(), sql, userId, paymentAccountId)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("unable to insert result")
+	}
+
+	return nil
+}
+
+func (p *postgresManager) GetPaymentAccount(userId int64) (string, bool, error) {
+	sql := "SELECT paymentAccountId, isActive FROM paymentAccounts WHERE userId = $1 LIMIT 1;"
+
+	result, err := p.conn.Query(context.Background(), sql, userId)
+	if err != nil {
+		return "", false, err
+	}
+
+	if !result.Next() {
+		return "", false, fmt.Errorf("unable to get row")
+	}
+
+	anySlice, err := result.Values()
+	if err != nil {
+		return "", false, err
+	}
+
+	if len(anySlice) != 2 {
+		return "", false, fmt.Errorf("invalid row structure returned in GetPriceId")
+	}
+
+	paymentAccountId, ok := anySlice[0].(string)
+	if !ok {
+		return "", false, fmt.Errorf("invalid row structure returned, on paymentId column in GetPriceId")
+	}
+
+	active, ok := anySlice[1].(bool)
+	if !ok {
+		return "", false, fmt.Errorf("invalid row structure returned, on isActive column in GetPriceId")
+	}
+
+	return paymentAccountId, active, nil
+}
+
+func (p *postgresManager) SetPaymentAccountToActive(id string) error {
+	sql := "UPDATE paymentAccounts SET isActive = TRUE WHERE paymentAccountId = $1;"
+
+	result, err := p.conn.Exec(context.Background(), sql, id)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("unable to update record")
+	}
+
+	return nil
 }

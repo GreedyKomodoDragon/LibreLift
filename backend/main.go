@@ -92,7 +92,11 @@ func main() {
 		panic(err)
 	}
 
-	paymentManager := payments.NewStripeManager(stripeKey, pg)
+	// TODO: Make this dynamic
+	refreshURL := "http://127.0.0.1:8080/api/v1/payments/account/onboard/refresh"
+	returnURL := "http://127.0.0.1:3000/profile/payments/success"
+
+	paymentManager := payments.NewStripeManager(stripeKey, refreshURL, returnURL, pg)
 	searchManager := search.NewElasticsearchManager(es)
 	authManager := auth.NewAuthManager(clientID, clientSecret)
 

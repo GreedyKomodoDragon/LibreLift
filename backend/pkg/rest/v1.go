@@ -312,6 +312,10 @@ type CreateSessionRequestBody struct {
 	IsSubscription bool  `json:"isSubscription"`
 }
 
+type ActiveReponse struct {
+	Active bool `json:"active"`
+}
+
 func addPayments(router fiber.Router, productManager products.ProductsManager, paymentManager payments.PaymentsManager) {
 	paymentRouter := router.Group("/payments")
 
@@ -432,6 +436,19 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 
+		case "account.updated":
+			var accountUpdated stripe.Account
+			if err := json.Unmarshal(event.Data.Raw, &accountUpdated); err != nil {
+				log.Error().Str("eventType", "account.updated").Err(err).Msg("Invalid Event unmarshalling")
+				return c.SendStatus(fiber.StatusInternalServerError)
+			}
+
+			if accountUpdated.PayoutsEnabled && accountUpdated.ChargesEnabled {
+				if err := paymentManager.SetPaymentAccountToActive(accountUpdated.ID); err != nil {
+					log.Error().Str("eventType", "account.updated").Err(err)
+				}
+			}
+
 		default:
 			log.Error().Str("eventType", string(event.Type)).Err(err).Msg("unhandled event type")
 		}
@@ -502,5 +519,59 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 		}
 
 		return c.SendStatus(fiber.StatusOK)
+	})
+
+	paymentRouter.Post("/account/onboard", func(c *fiber.Ctx) error {
+		id, ok := c.Locals("userId").(int64)
+		if !ok {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		account, ok, err := paymentManager.GetPaymentAccount(id)
+		if err != nil && err.Error() != "unable to get row" {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if ok {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		if err.Error() == "unable to get row" {
+			_, err := paymentManager.OnBoardUser(id)
+			if err != nil {
+				log.Error().Int64("userId", id).Err(err).Msg("failed to create onboarding process")
+				return c.SendStatus(fiber.StatusInternalServerError)
+			}
+
+			// TODO: Send an email for the url
+
+			return c.SendStatus(fiber.StatusCreated)
+		}
+
+		_, err = paymentManager.OnBoardRefresh(account)
+		if err != nil {
+			log.Error().Int64("userId", id).Err(err).Msg("failed to refresh onboarding process")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		// TODO: Send an email for the url
+
+		return c.SendStatus(fiber.StatusCreated)
+	})
+
+	paymentRouter.Post("/account/active", func(c *fiber.Ctx) error {
+		id, ok := c.Locals("userId").(int64)
+		if !ok {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		_, ok, err := paymentManager.GetPaymentAccount(id)
+		if err != nil && err.Error() != "unable to get row" {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(&ActiveReponse{
+			Active: ok,
+		})
 	})
 }

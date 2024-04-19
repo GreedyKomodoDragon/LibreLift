@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/stripe/stripe-go/v76"
+	"github.com/stripe/stripe-go/v76/account"
+	"github.com/stripe/stripe-go/v76/accountlink"
 	"github.com/stripe/stripe-go/v76/checkout/session"
 	"github.com/stripe/stripe-go/v76/price"
 	"github.com/stripe/stripe-go/v76/product"
@@ -24,16 +26,24 @@ type PaymentsManager interface {
 	RequestRefund(payId string) error
 	SetPaymentToPending(id int64) error
 	UpdatePaymentToRefunded(id string) error
+	OnBoardUser(id int64) (string, error)
+	OnBoardRefresh(id string) (string, error)
+	GetPaymentAccount(userId int64) (string, bool, error)
+	SetPaymentAccountToActive(id string) error
 }
 
 type stripeManager struct {
-	dbManager db.DBManager
+	refreshURL string
+	returnURL  string
+	dbManager  db.DBManager
 }
 
-func NewStripeManager(key string, db db.DBManager) PaymentsManager {
+func NewStripeManager(key, refreshURL, returnURL string, db db.DBManager) PaymentsManager {
 	stripe.Key = key
 	return &stripeManager{
-		dbManager: db,
+		dbManager:  db,
+		refreshURL: refreshURL,
+		returnURL:  returnURL,
 	}
 }
 
@@ -185,4 +195,58 @@ func (s *stripeManager) SetPaymentToPending(id int64) error {
 
 func (s *stripeManager) UpdatePaymentToRefunded(id string) error {
 	return s.dbManager.UpdatePaymentToRefunded(id)
+}
+
+func (s *stripeManager) OnBoardUser(id int64) (string, error) {
+	accountParams := &stripe.AccountParams{
+		Type: stripe.String(string(stripe.AccountTypeStandard)),
+	}
+
+	accountDetails, err := account.New(accountParams)
+	if err != nil {
+		return "", err
+	}
+
+	if err := s.dbManager.SavePaymentAccount(id, accountDetails.ID); err != nil {
+		return "", err
+	}
+
+	// Create account link
+	accountLinkParams := &stripe.AccountLinkParams{
+		Account:    stripe.String(string(accountDetails.ID)),
+		RefreshURL: stripe.String(s.refreshURL),
+		ReturnURL:  stripe.String(s.returnURL),
+		Type:       stripe.String("account_onboarding"),
+	}
+	result, err := accountlink.New(accountLinkParams)
+
+	if err != nil {
+		return "", err
+	}
+
+	return result.URL, nil
+}
+
+func (s *stripeManager) OnBoardRefresh(id string) (string, error) {
+	accountLinkParams := &stripe.AccountLinkParams{
+		Account:    stripe.String(id),
+		RefreshURL: stripe.String(s.refreshURL),
+		ReturnURL:  stripe.String(s.returnURL),
+		Type:       stripe.String("account_onboarding"),
+	}
+
+	result, err := accountlink.New(accountLinkParams)
+	if err != nil {
+		return "", err
+	}
+
+	return result.URL, nil
+}
+
+func (s *stripeManager) GetPaymentAccount(userId int64) (string, bool, error) {
+	return s.dbManager.GetPaymentAccount(userId)
+}
+
+func (s *stripeManager) SetPaymentAccountToActive(id string) error {
+	return s.dbManager.SetPaymentAccountToActive(id)
 }
