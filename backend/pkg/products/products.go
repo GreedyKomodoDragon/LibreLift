@@ -12,13 +12,14 @@ type ProductsManager interface {
 	GetAllProducts() ([]db.Product, error)
 	GetRepoProducts(repoId int64) ([]db.RepoProduct, error)
 	GetProductNameAndPrice(productId int64) (string, int64, error)
-	AddProductToRepo(productName string, productId, repoId, price int64) error
+	AddProductToRepo(productName string, userId, productId, repoId, price int64) error
 	GetReposOptions(id int64) ([]db.RepoOption, error)
 	GetPriceId(repoId, prodId int64, isSubscription bool) (string, error)
 	AddPurchase(metadata map[string]string, purchaseTime int64, paymentId string) error
 	GetUserPurchases(userId int64) ([]db.ProductPurchase, error)
 	// TODO: Refactor this into Payment Manager
 	GetPaymentId(id int64) (string, error)
+	GetAccountIdFeeAndPriceId(repoId, prodId int64, isSubscription bool) (string, string, int64, error)
 }
 
 type productsManager struct {
@@ -41,8 +42,8 @@ func (p *productsManager) GetRepoProducts(repoId int64) ([]db.RepoProduct, error
 	return p.dbManager.GetAllProductsForRepo(repoId)
 }
 
-func (p *productsManager) AddProductToRepo(productName string, productId, repoId, price int64) error {
-	oneOffId, recurringId, err := p.paymentManager.CreateProductForRepo(repoId, productName, price)
+func (p *productsManager) AddProductToRepo(productName string, userId, productId, repoId, price int64) error {
+	oneOffId, recurringId, err := p.paymentManager.CreateProductForRepo(userId, repoId, productName, price)
 	if err != nil {
 		return err
 	}
@@ -121,4 +122,8 @@ func (p *productsManager) GetPaymentId(id int64) (string, error) {
 	}
 
 	return payId, nil
+}
+
+func (p *productsManager) GetAccountIdFeeAndPriceId(repoId, prodId int64, isSubscription bool) (string, string, int64, error) {
+	return p.dbManager.GetAccountIdFeeAndPriceId(repoId, prodId, isSubscription)
 }

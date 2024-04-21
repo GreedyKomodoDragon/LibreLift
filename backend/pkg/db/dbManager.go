@@ -30,6 +30,7 @@ type DBManager interface {
 	SavePaymentAccount(userId int64, paymentAccountId string) error
 	GetPaymentAccount(userId int64) (string, bool, error)
 	SetPaymentAccountToActive(id string) error
+	GetAccountIdFeeAndPriceId(repoId, prodId int64, isSubscription bool) (string, string, int64, error)
 }
 
 type postgresManager struct {
@@ -332,6 +333,8 @@ func (p *postgresManager) GetProductNameAndPrice(prodId int64) (string, int64, e
 		return "", 0, err
 	}
 
+	defer result.Close()
+
 	if !result.Next() {
 		return "", 0, fmt.Errorf("not data returned in GetProductInfo")
 	}
@@ -368,6 +371,8 @@ func (p *postgresManager) GetPriceId(repoId, prodId int64, isSubscription bool) 
 	if err != nil {
 		return "", err
 	}
+
+	defer result.Close()
 
 	if !result.Next() {
 		return "", fmt.Errorf("not data returned in GetPriceId")
@@ -483,6 +488,8 @@ func (p *postgresManager) GetPaymentId(id int64) (string, error) {
 		return "", err
 	}
 
+	defer result.Close()
+
 	if !result.Next() {
 		return "", fmt.Errorf("not data returned in GetPriceId")
 	}
@@ -565,6 +572,8 @@ func (p *postgresManager) GetRefundablePaymentId(id int64) (string, error) {
 		return "", err
 	}
 
+	defer result.Close()
+
 	if !result.Next() {
 		return "", fmt.Errorf("not data returned, cannot find a refundable paymentId")
 	}
@@ -639,6 +648,8 @@ func (p *postgresManager) GetPaymentAccount(userId int64) (string, bool, error) 
 		return "", false, err
 	}
 
+	defer result.Close()
+
 	if !result.Next() {
 		return "", false, fmt.Errorf("unable to get row")
 	}
@@ -678,4 +689,68 @@ func (p *postgresManager) SetPaymentAccountToActive(id string) error {
 	}
 
 	return nil
+}
+
+func (p *postgresManager) GetAccountIdFeeAndPriceId(repoId, prodId int64, isSubscription bool) (string, string, int64, error) {
+	// TODO: Make string queries more efficient by not re-generating each time
+	sql := `
+	SELECT pa.paymentAccountId AS accountPaymentId,
+		rp.oneOffId,
+		pr.fee AS productFee
+	FROM repo_products rp
+	JOIN products pr ON rp.product_id = pr.id
+	JOIN repotable rt ON rp.repo_id = rt.id
+	JOIN paymentAccounts pa ON rt.user_id = pa.userId
+	WHERE rp.repo_id = $2
+	AND rp.product_id = $1;`
+
+	if isSubscription {
+		sql = `
+		SELECT pa.paymentAccountId AS accountPaymentId,
+			rp.recurringid,
+			pr.fee AS productFee
+		FROM repo_products rp
+		JOIN products pr ON rp.product_id = pr.id
+		JOIN repotable rt ON rp.repo_id = rt.id
+		JOIN paymentAccounts pa ON rt.user_id = pa.userId
+		WHERE rp.repo_id = $2
+		AND rp.product_id = $1;`
+	}
+
+	result, err := p.conn.Query(context.Background(), sql, prodId, repoId)
+
+	if err != nil {
+		return "", "", 0, err
+	}
+	defer result.Close()
+
+	if !result.Next() {
+		return "", "", 0, fmt.Errorf("unable to get row")
+	}
+
+	anySlice, err := result.Values()
+	if err != nil {
+		return "", "", 0, err
+	}
+
+	if len(anySlice) != 3 {
+		return "", "", 0, fmt.Errorf("invalid row structure returned in GetPriceId")
+	}
+
+	paymentAccountId, ok := anySlice[0].(string)
+	if !ok {
+		return "", "", 0, fmt.Errorf("invalid row structure returned, on paymentId column in GetAccountIdAndPriceId")
+	}
+
+	priceId, ok := anySlice[1].(string)
+	if !ok {
+		return "", "", 0, fmt.Errorf("invalid row structure returned, on price id column in GetAccountIdAndPriceId")
+	}
+
+	fee, ok := anySlice[2].(int64)
+	if !ok {
+		return "", "", 0, fmt.Errorf("invalid row structure returned, on fee column in GetAccountIdAndPriceId")
+	}
+
+	return paymentAccountId, priceId, fee, nil
 }

@@ -16,9 +16,9 @@ import (
 )
 
 type PaymentsManager interface {
-	CreateCheckoutSession(priceId string, subcription bool, metadata map[string]string) (string, error)
+	CreateCheckoutSession(priceId string, subcription bool, accountPaymentId string, fee int64, metadata map[string]string) (string, error)
 	GetSessionStatus(sessionId string) (status string, email string, err error)
-	CreateProductForRepo(repoid int64, productName string, productPrice int64) (string, string, error)
+	CreateProductForRepo(userId, repoid int64, productName string, productPrice int64) (string, string, error)
 	CancelSubscription(payId string) error
 	UpdateSubScriptionToPending(id string) error
 	EnableSubscription(id string) error
@@ -47,7 +47,7 @@ func NewStripeManager(key, refreshURL, returnURL string, db db.DBManager) Paymen
 	}
 }
 
-func (s *stripeManager) CreateCheckoutSession(priceId string, subcription bool, metadata map[string]string) (string, error) {
+func (s *stripeManager) CreateCheckoutSession(priceId string, subcription bool, accountPaymentId string, fee int64, metadata map[string]string) (string, error) {
 	// TODO: Make this dynamic/env variable
 	domain := "http://127.0.0.1:3000"
 
@@ -67,6 +67,12 @@ func (s *stripeManager) CreateCheckoutSession(priceId string, subcription bool, 
 		},
 		Mode:     mode,
 		Metadata: metadata,
+		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{
+			ApplicationFeeAmount: stripe.Int64(fee),
+			TransferData: &stripe.CheckoutSessionPaymentIntentDataTransferDataParams{
+				Destination: stripe.String(accountPaymentId),
+			},
+		},
 	}
 
 	sess, err := session.New(params)
@@ -86,10 +92,23 @@ func (s *stripeManager) GetSessionStatus(sessionId string) (string, string, erro
 	return string(sess.Status), string(sess.CustomerDetails.Email), nil
 }
 
-func (s *stripeManager) CreateProductForRepo(repoid int64, productName string, productPrice int64) (string, string, error) {
+func (s *stripeManager) CreateProductForRepo(userId, repoid int64, productName string, productPrice int64) (string, string, error) {
+	paymentAccountId, ok, err := s.GetPaymentAccount(userId)
+	if err != nil {
+		return "", "", err
+	}
+
+	if !ok {
+		return "", "", fmt.Errorf("account does not have a connect stripe account")
+	}
+
 	params := &stripe.ProductParams{
 		Name: stripe.String(fmt.Sprintf("%v - %s", repoid, productName)),
+		Metadata: map[string]string{
+			"acct": paymentAccountId,
+		},
 	}
+
 	result, err := product.New(params)
 	if err != nil {
 		return "", "", err

@@ -23,7 +23,7 @@ func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects
 	router := app.Group("/api/v1")
 
 	addAuth(router, authManager)
-	addProject(router, projectManager, searchManager)
+	addProject(router, projectManager, searchManager, paymentManager)
 	addProducts(router, productManager, authManager)
 	addSearch(router, searchManager)
 	addPayments(router, productManager, paymentManager)
@@ -108,7 +108,7 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 	})
 }
 
-func addProject(router fiber.Router, projectManager projects.ProjectManager, searchManager search.SearchManager) {
+func addProject(router fiber.Router, projectManager projects.ProjectManager, searchManager search.SearchManager, paymentManager payments.PaymentsManager) {
 	projectRouter := router.Group("/project")
 
 	projectRouter.Get("/repos", func(c *fiber.Ctx) error {
@@ -144,6 +144,20 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager, sea
 		id, err := strconv.ParseInt(c.Params("id"), 10, 64)
 		if err != nil {
 			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		idRef := c.Locals("userId")
+		if idRef == nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		userId, ok := idRef.(int64)
+		if !ok {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if _, ok, err := paymentManager.GetPaymentAccount(userId); err != nil || !ok {
+			return c.SendStatus(fiber.StatusUnauthorized)
 		}
 
 		repo, err := projectManager.GetProjectMetaData(id, token)
@@ -233,8 +247,18 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
+		idRef := c.Locals("userId")
+		if idRef == nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		userId, ok := idRef.(int64)
+		if !ok {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
 		token := c.Cookies("librelift-token")
-		ok, err := authManager.IsRepoOwner(token, id)
+		ok, err = authManager.IsRepoOwner(token, id)
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
@@ -253,7 +277,7 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 			})
 		}
 
-		if err := productManager.AddProductToRepo(name, pid, id, price); err != nil {
+		if err := productManager.AddProductToRepo(name, userId, pid, id, price); err != nil {
 			log.Error().Int64("repoId", id).Int64("productId", pid).Err(err).Msg("failed to add product")
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
@@ -325,8 +349,9 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
-		priceId, err := productManager.GetPriceId(body.RepoId, body.ProductId, body.IsSubscription)
+		accountId, priceId, fee, err := productManager.GetAccountIdFeeAndPriceId(body.RepoId, body.ProductId, body.IsSubscription)
 		if err != nil {
+			log.Error().Int64("repoId", body.RepoId).Int64("ProductId", body.ProductId).Bool("subscription", body.IsSubscription).Err(err).Msg("failed execute GetAccountIdFeeAndPriceId")
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
@@ -335,11 +360,12 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		clientSecret, err := paymentManager.CreateCheckoutSession(priceId, body.IsSubscription, map[string]string{
+		clientSecret, err := paymentManager.CreateCheckoutSession(priceId, body.IsSubscription, accountId, fee, map[string]string{
 			"id":           strconv.FormatInt(userId, 10),
 			"subscription": strconv.FormatBool(body.IsSubscription),
 			"repoId":       strconv.FormatInt(body.RepoId, 10),
 			"productId":    strconv.FormatInt(body.ProductId, 10),
+			"accountId":    accountId,
 		})
 
 		if err != nil {
