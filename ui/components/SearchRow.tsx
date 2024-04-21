@@ -33,7 +33,7 @@ export default function SearchRow(props: SearchRowProps) {
             </a>
             <a
               href={`/repositories/${props.id}`}
-              className="inline-flex items-center bg-blue-900 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
+              className="inline-flex items-center bg-violet-950 hover:bg-violet-600 text-white py-2 px-4 rounded-lg"
             >
               <img
                 src={"/logo.svg"}

@@ -53,7 +53,7 @@ export default function Repostories() {
   return (
     <div className="p-4">
       <AccountAlerts />
-      <h3 className="font-semibold whitespace-nowrap tracking-tight text-4xl">
+      <h3 className="ml-8 font-semibold whitespace-nowrap tracking-tight text-4xl">
         Your Public Repostories
         {/* Refresh Icon will go here, will need a tooltip as well */}
         <button>
@@ -76,24 +76,28 @@ export default function Repostories() {
             />
           </div>
 
-          <div className="flex items-center">
-            <label className="ml-4 mr-2">Filter By:</label>
+          <div className="flex items-center space-x-2">
+            <label htmlFor="filter" className="text-gray-700">
+              Filter By:
+            </label>
             <select
-              id="sort"
-              className="px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              id="filter"
+              className="p-2 form-select focus:ring-blue-500 focus:border-blue-500 border-gray-300 rounded-md shadow-sm"
             >
-              <option value="name">All</option>
-              <option value="stars">Added</option>
-              <option value="updated">Not Connected</option>
+              <option value="all">All</option>
+              <option value="added">Added</option>
+              <option value="not-connected">Not Connected</option>
             </select>
-            <label className="ml-4 mr-2">Sort By:</label>
+            <label htmlFor="sort" className="text-gray-700">
+              Sort By:
+            </label>
             <select
               id="sort"
-              className="px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="p-2  form-select focus:ring-blue-500 focus:border-blue-500 border-gray-300 rounded-md shadow-sm"
             >
-              <option value="name">Stars</option>
-              <option value="stars">Funding</option>
-              <option value="updated">Last Changed</option>
+              <option value="stars">Stars</option>
+              <option value="funding">Funding</option>
+              <option value="last-changed">Last Changed</option>
             </select>
           </div>
         </div>

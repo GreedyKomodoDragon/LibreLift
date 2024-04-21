@@ -178,7 +178,7 @@ const PurchasesPage: React.FC = () => {
       <div className="mb-4">
         <button
           className={`mr-4 px-4 py-2 rounded-lg ${
-            filter === "all" ? "bg-black text-white" : "bg-gray-200"
+            filter === "all" ? "bg-violet-950 text-white" : "bg-gray-200"
           }`}
           onClick={() => setFilter("all")}
         >
@@ -186,7 +186,7 @@ const PurchasesPage: React.FC = () => {
         </button>
         <button
           className={`mr-4 px-4 py-2 rounded-lg ${
-            filter === "one-off" ? "bg-black text-white" : "bg-gray-200"
+            filter === "one-off" ? "bg-violet-950 text-white" : "bg-gray-200"
           }`}
           onClick={() => setFilter("one-off")}
         >
@@ -194,7 +194,9 @@ const PurchasesPage: React.FC = () => {
         </button>
         <button
           className={`px-4 py-2 rounded-lg ${
-            filter === "subscription" ? "bg-black text-white" : "bg-gray-200"
+            filter === "subscription"
+              ? "bg-violet-950 text-white"
+              : "bg-gray-200"
           }`}
           onClick={() => setFilter("subscription")}
         >
@@ -220,16 +222,18 @@ const PurchasesPage: React.FC = () => {
               }}
             />
           ))}
-        <ThreeDots
-          visible={isPending}
-          height="80"
-          width="80"
-          color="#4fa94d"
-          radius="9"
-          ariaLabel="three-dots-loading"
-          wrapperStyle={{}}
-          wrapperClass=""
-        />
+        <div className="flex justify-center">
+          <ThreeDots
+            visible={isPending}
+            height="80"
+            width="80"
+            color="#4fa94d"
+            radius="9"
+            ariaLabel="three-dots-loading"
+            wrapperStyle={{}}
+            wrapperClass=""
+          />
+        </div>
       </div>
     </div>
   );

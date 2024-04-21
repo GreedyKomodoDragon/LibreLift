@@ -58,14 +58,14 @@ export default function NavigationBar() {
   }
 
   return (
-    <nav className="bg-black dark:bg-black w-full px-4 py-2 top-0">
+    <nav className="bg-violet-950 dark:bg-black w-full px-4 py-2 top-0">
       <div
         className="mx-auto flex items-center justify-start"
         style={{
           maxWidth: "1000px",
         }}
       >
-        <div className="flex items-center space-x-4 mr-6">
+        <div className="flex items-center space-x-4 mr-20">
           <Link className="text-[#f8f9fa] text-lg font-semibold" href="/">
             LibreLift
           </Link>

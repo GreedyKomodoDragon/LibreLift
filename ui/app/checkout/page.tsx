@@ -49,7 +49,7 @@ export default function CheckoutForm() {
   const options = { fetchClientSecret };
 
   return (
-    <div id="checkout" className="mt-5">
+    <div id="checkout" className="m-5 p-5 rounded-lg bg-white">
       <EmbeddedCheckoutProvider stripe={stripePromise} options={options}>
         <EmbeddedCheckout />
       </EmbeddedCheckoutProvider>
