@@ -5,39 +5,41 @@ import AccountAlerts from "@/components/profile/AccountAlerts";
 import RepoBlock from "@/components/profile/RepoBlock";
 import { debounce } from "@/lib/utils";
 import { GetRepos, Repo } from "@/rest/github";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 /* eslint-disable react/jsx-key */
 export default function Repostories() {
-  const {
-    data,
-    fetchNextPage,
-    isFetching,
-    isFetchingNextPage,
-    error,
-  } = useInfiniteQuery({
-    queryKey: ["repoData"],
-    queryFn: ({ pageParam }) => GetRepos(pageParam),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage, pages) => {
-      return pages.length + 1;
-    },
-  });
-
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [filtered, setFiltered] = useState<Repo[]>();
+  const [items, setItems] = useState<Repo[]>();
+  const [stop, setStop] = useState<boolean>(false);
+
+  const queryClient = useQueryClient();
+
+  const { data, fetchNextPage, isFetching, isFetchingNextPage, error } =
+    useInfiniteQuery({
+      queryKey: ["repoData"],
+      queryFn: ({ pageParam }) => GetRepos(pageParam, searchTerm),
+      initialPageParam: 1,
+      getNextPageParam: (lastPage, pages) => {
+        if (lastPage.length === 0 && !stop) {
+          setStop(true);
+        }
+
+        return pages.length + 1;
+      },
+    });
 
   const debouncedFilterItems = debounce((term: string) => {
     setSearchTerm(term);
-  }, 500); // Adjust delay time as needed
+  }, 1000);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value;
     debouncedFilterItems(term);
   };
 
-  const filteredItems = () => {
+  const convertItems = () => {
     if (data === undefined || data.pages.length === 0) {
       return [];
     }
@@ -47,20 +49,16 @@ export default function Repostories() {
       items.push(...data.pages[index]);
     }
 
-    if (searchTerm.length === 0) {
-      return items;
-    }
-
-    const lowerCasedTerm = searchTerm.toLowerCase();
-
-    return items.filter((item: { name: string }) => {
-      return item.name.toLowerCase().includes(lowerCasedTerm);
-    });
+    return items;
   };
 
   useEffect(() => {
-    setFiltered(filteredItems());
-  }, [searchTerm, data]);
+    queryClient.invalidateQueries({ queryKey: ["repoData"] });
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setItems(convertItems());
+  }, [data]);
 
   useEffect(() => {
     // Event listener to check scroll position
@@ -72,7 +70,7 @@ export default function Repostories() {
 
       // Load more items when user reaches the bottom 20px of the page
       // Must limit spamming by only allowing three more attempts
-      if (bottomOffset < 20 && !isFetchingNextPage) {
+      if (bottomOffset < 20 && !isFetchingNextPage && !stop) {
         fetchNextPage();
       }
     };
@@ -81,7 +79,7 @@ export default function Repostories() {
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
-  }, []);
+  }, [stop, isFetchingNextPage]);
 
   return (
     <div className="p-4 h-screen">
@@ -108,32 +106,8 @@ export default function Repostories() {
               onChange={handleInputChange}
             />
           </div>
-
-          <div className="flex items-center space-x-2">
-            <label htmlFor="filter" className="text-gray-700">
-              Filter By:
-            </label>
-            <select
-              id="filter"
-              className="p-2 form-select focus:ring-blue-500 focus:border-blue-500 border-gray-300 rounded-md shadow-sm"
-            >
-              <option value="all">All</option>
-              <option value="added">Added</option>
-              <option value="not-connected">Not Connected</option>
-            </select>
-            <label htmlFor="sort" className="text-gray-700">
-              Sort By:
-            </label>
-            <select
-              id="sort"
-              className="p-2  form-select focus:ring-blue-500 focus:border-blue-500 border-gray-300 rounded-md shadow-sm"
-            >
-              <option value="stars">Stars</option>
-              <option value="last-changed">Last Changed</option>
-            </select>
-          </div>
         </div>
-        <RepoBlock isPending={isFetching} error={error} data={filtered || []} />
+        <RepoBlock isPending={isFetching} error={error} data={items || []} />
       </div>
     </div>
   );
