@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"librelift/pkg/db"
-	"sort"
 
 	"github.com/google/go-github/v60/github"
 	"golang.org/x/oauth2"
 )
 
 type ProjectManager interface {
-	GetProjectsMetaData(string) ([]ProjectMetaData, error)
+	GetProjectsMetaData(string, int) ([]ProjectMetaData, error)
 	AddingRepo(id int64, token string) error
 	GetProjectMetaData(id int64, token string) (*BasicRepoMetaData, error)
 	IsOpenSource(license string) bool
@@ -28,12 +27,13 @@ type BasicRepoMetaData struct {
 }
 
 type ProjectMetaData struct {
-	ID          *int64  `json:"id"`
-	Name        *string `json:"name"`
-	Description *string `json:"description"`
-	Added       bool    `json:"added"`
-	Stars       *int    `json:"stars"`
-	License     *string `json:"license"`
+	ID           *int64  `json:"id"`
+	Name         *string `json:"name"`
+	Description  *string `json:"description"`
+	Added        bool    `json:"added"`
+	Stars        *int    `json:"stars"`
+	License      *string `json:"license"`
+	IsOpenSource bool    `json:"isOpenSource"`
 }
 
 func NewProjectManager(repoDB db.DBManager, openSourceLiences *[]string) ProjectManager {
@@ -43,7 +43,7 @@ func NewProjectManager(repoDB db.DBManager, openSourceLiences *[]string) Project
 	}
 }
 
-func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, error) {
+func (p *projectManager) GetProjectsMetaData(token string, page int) ([]ProjectMetaData, error) {
 	httpClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	))
@@ -59,7 +59,13 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 	// - Might be worth storing all repos in the database to avoid doing two fetches -> How to maintain its up to date?
 	// - Cache results from Github to avoid longer waits -> decrease github throttling librelift
 	// - Could get client to fetch their own repos and then match the ids up -> client heavy though
-	opt := &github.RepositoryListByUserOptions{Type: "public"}
+	opt := &github.RepositoryListByUserOptions{
+		Type: "public",
+		ListOptions: github.ListOptions{
+			Page:    page,
+			PerPage: 10,
+		}}
+
 	repos, _, err := client.Repositories.ListByUser(context.Background(), user.GetLogin(), opt)
 	if err != nil {
 		return nil, err
@@ -74,21 +80,6 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 	if err != nil {
 		return nil, err
 	}
-
-	// in place filtering
-	n := 0
-	for _, val := range repos {
-		if val.License != nil && val.License.Name != nil && p.IsOpenSource(*val.License.Name) {
-			repos[n] = val
-			n++
-		}
-	}
-
-	repos = repos[:n]
-
-	sort.Slice(repos, func(i, j int) bool {
-		return *repos[i].ID < *repos[j].ID
-	})
 
 	projects := make([]ProjectMetaData, len(repos))
 
@@ -114,17 +105,20 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 		}
 
 		license := ""
+		openSource := false
 		if repo.License != nil && repo.License.Name != nil {
 			license = *repo.License.Name
+			openSource = p.IsOpenSource(*repo.License.Name)
 		}
 
 		projects[repoIndex] = ProjectMetaData{
-			ID:          repo.ID,
-			Name:        repo.FullName,
-			Description: repo.Description,
-			Added:       added,
-			Stars:       repo.StargazersCount,
-			License:     &license,
+			ID:           repo.ID,
+			Name:         repo.FullName,
+			Description:  repo.Description,
+			Added:        added,
+			Stars:        repo.StargazersCount,
+			License:      &license,
+			IsOpenSource: openSource,
 		}
 
 		// Move repoIndex to the next element
@@ -138,17 +132,20 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 	// If there are remaining repos, mark them as not added
 	for i := repoIndex; i < len(repos); i++ {
 		license := ""
+		openSource := false
 		if repos[i].License != nil && repos[i].License.Name != nil {
 			license = *repos[i].License.Name
+			openSource = p.IsOpenSource(*repos[i].License.Name)
 		}
 
 		projects[i] = ProjectMetaData{
-			ID:          repos[i].ID,
-			Name:        repos[i].FullName,
-			Description: repos[i].Description,
-			Added:       false,
-			Stars:       repos[i].StargazersCount,
-			License:     &license,
+			ID:           repos[i].ID,
+			Name:         repos[i].FullName,
+			Description:  repos[i].Description,
+			Added:        false,
+			Stars:        repos[i].StargazersCount,
+			License:      &license,
+			IsOpenSource: openSource,
 		}
 	}
 

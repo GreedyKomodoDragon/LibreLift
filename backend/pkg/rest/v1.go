@@ -116,8 +116,15 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager, sea
 
 	projectRouter.Get("/repos", func(c *fiber.Ctx) error {
 		token := c.Cookies("librelift-token")
-		projects, err := projectManager.GetProjectsMetaData(token)
+		pageNum := c.Query("page")
+		pageNumInt, err := strconv.ParseInt(pageNum, 10, 64)
 		if err != nil {
+			pageNumInt = 0
+		}
+
+		projects, err := projectManager.GetProjectsMetaData(token, int(pageNumInt))
+		if err != nil {
+			log.Error().Err(err).Msg("could not get projects")
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
