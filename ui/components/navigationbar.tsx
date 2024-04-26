@@ -9,8 +9,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAvatarURL, logout } from "@/rest/auth";
 import LoadingSpinner from "./LoadingSpinner";
 import Cookies from "universal-cookie";
+import { useStore } from "@/store/store";
+import Toast from "./toast";
 
 export default function NavigationBar() {
+  const errorMsg = useStore((state) => state.error);
+  const updateError = useStore((state) => state.updateError);
+
   const pathname = usePathname();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -58,7 +63,7 @@ export default function NavigationBar() {
   }
 
   return (
-    <nav className="bg-violet-950 dark:bg-black w-full px-4 py-2 top-0">
+    <nav className="bg-violet-950 w-full px-4 py-2 top-0">
       <div
         className="mx-auto flex items-center justify-start"
         style={{
@@ -70,16 +75,7 @@ export default function NavigationBar() {
             LibreLift
           </Link>
         </div>
-        <div className="flex items-center justify-start flex-1">
-          <nav className="flex items-center justify-start space-x-8">
-            <Link className="text-[#f8f9fa] font-semibold" href="/pricing">
-              Pricing
-            </Link>
-            <Link className="text-[#f8f9fa] font-semibold" href="#">
-              Contact
-            </Link>
-          </nav>
-        </div>
+        <div className="flex items-center justify-start flex-1"> </div>
         <div className="relative">
           <form onSubmit={goSearch}>
             <input
@@ -143,7 +139,7 @@ export default function NavigationBar() {
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setIsOpen(false)}
                 >
-                  My Public Repositories
+                  My Open Source Repositories
                 </Link>
                 <Link
                   href="/profile/dashboard"
@@ -191,6 +187,15 @@ export default function NavigationBar() {
           )}
         </div>
       </div>
+      {errorMsg && (
+        <Toast
+          message={errorMsg}
+          position="bottom-middle"
+          onClose={() => {
+            updateError("");
+          }}
+        />
+      )}
     </nav>
   );
 }

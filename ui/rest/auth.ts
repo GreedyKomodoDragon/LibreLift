@@ -1,3 +1,4 @@
+import { useAccountStore } from "@/store/store";
 import axios from "axios";
 import Cookies from "universal-cookie";
 
@@ -30,8 +31,10 @@ export async function getAvatarURL(): Promise<string> {
     const result = await axios.get("http://127.0.0.1:8080/api/v1/auth/avatar", {
       withCredentials: true,
     });
+
     return result.data.avatar;
   } catch (error) {
+    console.error(error)
     return "";
   }
 }

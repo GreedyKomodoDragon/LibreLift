@@ -54,7 +54,7 @@ export default function Repostories() {
     <div className="p-4">
       <AccountAlerts />
       <h3 className="ml-8 font-semibold whitespace-nowrap tracking-tight text-4xl">
-        Your Public Repostories
+        Your Open Source Repostories
         {/* Refresh Icon will go here, will need a tooltip as well */}
         <button>
           <img
@@ -96,7 +96,6 @@ export default function Repostories() {
               className="p-2  form-select focus:ring-blue-500 focus:border-blue-500 border-gray-300 rounded-md shadow-sm"
             >
               <option value="stars">Stars</option>
-              <option value="funding">Funding</option>
               <option value="last-changed">Last Changed</option>
             </select>
           </div>

@@ -3,7 +3,7 @@
 
 import { Repo } from "@/rest/github";
 import RepoRow from "../RepoRow";
-import LoadingSpinner from "../LoadingSpinner";
+import { ThreeDots } from "react-loader-spinner";
 
 type RepoBlockProps = {
   isPending: boolean;
@@ -18,7 +18,18 @@ export default function RepoBlock(props: RepoBlockProps) {
     <div className="flex flex-wrap justify-center">
       {isPending && (
         <div className="mt-4">
-          <LoadingSpinner size={36} />
+          <div className="flex justify-center">
+            <ThreeDots
+              visible={isPending}
+              height="80"
+              width="80"
+              color="#4fa94d"
+              radius="9"
+              ariaLabel="three-dots-loading"
+              wrapperStyle={{}}
+              wrapperClass=""
+            />
+          </div>
         </div>
       )}
       {error && (
@@ -32,7 +43,16 @@ export default function RepoBlock(props: RepoBlockProps) {
       {!isPending &&
         !error &&
         data &&
-        data.map((d) => <RepoRow id={d.id} name={d.name} description={d.description} added={d.added} />)}
+        data.map((d) => (
+          <RepoRow
+            id={d.id}
+            name={d.name}
+            description={d.description}
+            added={d.added}
+            star={d.stars || 0}
+            license={d.license || "No License"}
+          />
+        ))}
     </div>
   );
 }

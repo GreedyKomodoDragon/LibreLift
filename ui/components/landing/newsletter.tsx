@@ -1,3 +1,5 @@
+import EmailForm from "./emailForm";
+
 export function NewsLetterSignUp() {
   return (
     <section className="w-full">
@@ -12,20 +14,7 @@ export function NewsLetterSignUp() {
           </p>
         </div>
         <div className="w-full max-w-[400px] space-y-4">
-          <div className="flex flex-col">
-            <label className="sr-only" htmlFor="email">
-              Email
-            </label>
-            <input
-              className="w-full border-black border-2 p-2 rounded-md"
-              id="email"
-              placeholder="Enter your email"
-              type="email"
-            />
-          </div>
-          <button className="w-full bg-black rounded-md text-white py-3" type="submit">
-            Join Now
-          </button>
+          <EmailForm />
         </div>
       </div>
     </section>

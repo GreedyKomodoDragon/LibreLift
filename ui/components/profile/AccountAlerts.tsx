@@ -1,8 +1,9 @@
 import { CreateStripeAccount, IsActiveSeller } from "@/rest/payment";
 import EmailConfirmation from "./EmailConfirmation";
 import WarningMessage from "./WarningMessage";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useAccountStore } from "@/store/store";
 
 export default function AccountAlerts() {
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
@@ -11,6 +12,12 @@ export default function AccountAlerts() {
     queryKey: ["active"],
     queryFn: () => IsActiveSeller(),
   });
+
+  const updateActivePayment = useAccountStore((state) => state.updateActivePayment)
+
+  useEffect(() => {
+    updateActivePayment(data || false)
+  }, [data])
 
   return (
     <>

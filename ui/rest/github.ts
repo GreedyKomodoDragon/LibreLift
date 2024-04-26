@@ -5,6 +5,8 @@ export type Repo = {
   name: string;
   description: string;
   added: boolean;
+  stars: number | null;
+  license: string | null;
 };
 
 export type RepoMetaData = {
@@ -13,18 +15,23 @@ export type RepoMetaData = {
 };
 
 export async function GetRepos(): Promise<Repo[]> {
-  const results = await axios.get("http://127.0.0.1:8080/api/v1/project/repos", {
+  const results = await axios.get(
+    "http://127.0.0.1:8080/api/v1/project/repos",
+    {
       withCredentials: true,
-    });
+    }
+  );
 
   return results.data.projects as Repo[];
 }
 
-
 export async function GetRepoMetaData(id: number): Promise<RepoMetaData> {
-  const results = await axios.get(`http://127.0.0.1:8080/api/v1/project/repos/${id}`, {
+  const results = await axios.get(
+    `http://127.0.0.1:8080/api/v1/project/repos/${id}`,
+    {
       withCredentials: true,
-    });
+    }
+  );
 
   return results.data as RepoMetaData;
 }

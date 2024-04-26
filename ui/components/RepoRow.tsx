@@ -5,18 +5,23 @@ import { AddRepoDialog } from "./dialog";
 import { AddRepoToLibrelift } from "@/rest/repos";
 import Link from "next/link";
 import LoadingSpinner from "./LoadingSpinner";
+import { useAccountStore } from "@/store/store";
 
 type RepoRow = {
   name: string;
   description: string;
   id: number;
   added: boolean;
+  star: number;
+  license: string;
 };
 
 export default function RepoRow(props: RepoRow) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [added, setAdded] = useState(false);
   const [isPending, setIsPending] = useState(false);
+
+  const hasActive = useAccountStore((state) => state.hasActivePaymentAccount)
 
   const add = async () => {
     setIsPending(true);
@@ -39,16 +44,18 @@ export default function RepoRow(props: RepoRow) {
           <p className="text-gray-600 mb-4">{props.description}</p>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Stars: 1000</p>
-              <p className="text-sm text-gray-500">Last Update: 1000</p>
+              <p className="text-sm text-gray-500">Stars: {props.star}</p>
               <p className="text-sm text-gray-500">
-                Current Monthly Funding Total: $1000
+                License:{" "}
+                {props.license.length == 0
+                  ? "No License - Not Open Source!"
+                  : props.license}
               </p>
             </div>
             <div>
               {isPending ? (
                 <LoadingSpinner size={16} />
-              ) : props.added || added ? (
+              ) : (props.added || added) && hasActive ? (
                 <>
                   <Link
                     href={`/profile/repositories/${props.id}/products`}
@@ -77,8 +84,9 @@ export default function RepoRow(props: RepoRow) {
                 </>
               ) : (
                 <button
-                  className="inline-flex items-center bg-gray-900 hover:bg-gray-700 text-white py-2 px-4 rounded-lg mr-1"
+                  className="inline-flex items-center bg-gray-900 disabled:bg-gray-300 hover:bg-gray-700 text-white py-2 px-4 rounded-lg mr-1"
                   onClick={() => setIsDialogOpen(true)}
+                  disabled={!hasActive}
                 >
                   <img
                     src={"/github-mark.svg"}

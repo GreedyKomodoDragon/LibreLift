@@ -81,14 +81,13 @@ export default function Page({ params }: { params: { id: string } }) {
                         url={d.url}
                         option={true}
                         added={d.isAdded}
-                        onAddClick={() => {
-                          addProductToRepo(d.id, Number(params.id))
-                            .then(() => {
-                              reload();
-                            })
-                            .catch((error) => {
-                              console.error(error);
-                            });
+                        onAddClick={async () => {
+                          try {
+                            await addProductToRepo(d.id, Number(params.id));
+                            reload();
+                          } catch (error) {
+                            console.error(error);
+                          }
                         }}
                       />
                     </div>
