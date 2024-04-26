@@ -3,6 +3,7 @@ package rest
 import (
 	"encoding/json"
 	"librelift/pkg/auth"
+	"librelift/pkg/email"
 	"librelift/pkg/payments"
 	"librelift/pkg/products"
 	"librelift/pkg/projects"
@@ -18,15 +19,17 @@ import (
 )
 
 func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects.ProjectManager,
-	productManager products.ProductsManager, searchManager search.SearchManager, paymentManager payments.PaymentsManager) {
+	productManager products.ProductsManager, searchManager search.SearchManager, paymentManager payments.PaymentsManager,
+	emailManager email.EmailManager) {
 
 	router := app.Group("/api/v1")
 
 	addAuth(router, authManager)
 	addProject(router, projectManager, searchManager, paymentManager)
-	addProducts(router, productManager, authManager)
+	addProducts(router, productManager, authManager, paymentManager)
 	addSearch(router, searchManager)
 	addPayments(router, productManager, paymentManager)
+	addEmail(router, emailManager)
 }
 
 type LoginReq struct {
@@ -187,7 +190,7 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager, sea
 	})
 }
 
-func addProducts(router fiber.Router, productManager products.ProductsManager, authManager auth.AuthManager) {
+func addProducts(router fiber.Router, productManager products.ProductsManager, authManager auth.AuthManager, paymentManager payments.PaymentsManager) {
 	projectRouter := router.Group("/products")
 
 	projectRouter.Get("/", func(c *fiber.Ctx) error {
@@ -267,6 +270,15 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"message": "must be owner",
 			})
+		}
+
+		_, ok, err = paymentManager.GetPaymentAccount(id)
+		if err != nil && err.Error() != "unable to get row" {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if ok {
+			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
 		name, price, err := productManager.GetProductNameAndPrice(pid)
@@ -585,7 +597,7 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 		return c.SendStatus(fiber.StatusCreated)
 	})
 
-	paymentRouter.Post("/account/active", func(c *fiber.Ctx) error {
+	paymentRouter.Get("/account/active", func(c *fiber.Ctx) error {
 		id, ok := c.Locals("userId").(int64)
 		if !ok {
 			return c.SendStatus(fiber.StatusInternalServerError)
@@ -599,5 +611,29 @@ func addPayments(router fiber.Router, productManager products.ProductsManager, p
 		return c.Status(fiber.StatusOK).JSON(&ActiveReponse{
 			Active: ok,
 		})
+	})
+}
+
+type AddEmailToMailingListReq struct {
+	Email string `json:"email"`
+}
+
+func addEmail(router fiber.Router, emailManager email.EmailManager) {
+	emailRouter := router.Group("/email")
+
+	emailRouter.Post("/mailing", func(c *fiber.Ctx) error {
+		var req AddEmailToMailingListReq
+		if err := c.BodyParser(&req); err != nil {
+			log.Error().Err(err).Msg("failed marshall request")
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		if err := emailManager.AddEmailToMailingList(req.Email); err != nil {
+			log.Error().Err(err).Msg("failed to add to mailing list")
+			//TODO: check if it is a bad email error
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.SendStatus(fiber.StatusAccepted)
 	})
 }

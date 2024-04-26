@@ -14,10 +14,12 @@ type ProjectManager interface {
 	GetProjectsMetaData(string) ([]ProjectMetaData, error)
 	AddingRepo(id int64, token string) error
 	GetProjectMetaData(id int64, token string) (*BasicRepoMetaData, error)
+	IsOpenSource(license string) bool
 }
 
 type projectManager struct {
-	repoDB db.DBManager
+	repoDB            db.DBManager
+	openSourceLiences *[]string
 }
 
 type BasicRepoMetaData struct {
@@ -30,11 +32,14 @@ type ProjectMetaData struct {
 	Name        *string `json:"name"`
 	Description *string `json:"description"`
 	Added       bool    `json:"added"`
+	Stars       *int    `json:"stars"`
+	License     *string `json:"license"`
 }
 
-func NewProjectManager(repoDB db.DBManager) ProjectManager {
+func NewProjectManager(repoDB db.DBManager, openSourceLiences *[]string) ProjectManager {
 	return &projectManager{
-		repoDB: repoDB,
+		repoDB:            repoDB,
+		openSourceLiences: openSourceLiences,
 	}
 }
 
@@ -69,6 +74,18 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 	if err != nil {
 		return nil, err
 	}
+
+	// in place filtering
+	n := 0
+	for _, val := range repos {
+		if val.License != nil && val.License.Name != nil && p.IsOpenSource(*val.License.Name) {
+			repos[n] = val
+			n++
+		}
+	}
+
+	repos = repos[:n]
+
 	sort.Slice(repos, func(i, j int) bool {
 		return *repos[i].ID < *repos[j].ID
 	})
@@ -80,14 +97,25 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 
 	for userRepoIndex < len(userRepos) {
 		repo := repos[repoIndex]
-		userRepo := userRepos[userRepoIndex]
+
+		for userRepoIndex < len(userRepos) && *repo.ID > userRepos[userRepoIndex] {
+			userRepoIndex++
+		}
+
+		if userRepoIndex >= len(userRepos) {
+			break
+		}
 
 		// Compare repo ID with userRepo ID
-		added := false
-		if *repo.ID == userRepo {
-			added = true
+		added := *repo.ID == userRepos[userRepoIndex]
+		if added {
 			// Move userRepoIndex to the next element
 			userRepoIndex++
+		}
+
+		license := ""
+		if repo.License != nil && repo.License.Name != nil {
+			license = *repo.License.Name
 		}
 
 		projects[repoIndex] = ProjectMetaData{
@@ -95,6 +123,8 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 			Name:        repo.FullName,
 			Description: repo.Description,
 			Added:       added,
+			Stars:       repo.StargazersCount,
+			License:     &license,
 		}
 
 		// Move repoIndex to the next element
@@ -107,11 +137,18 @@ func (p *projectManager) GetProjectsMetaData(token string) ([]ProjectMetaData, e
 
 	// If there are remaining repos, mark them as not added
 	for i := repoIndex; i < len(repos); i++ {
+		license := ""
+		if repos[i].License != nil && repos[i].License.Name != nil {
+			license = *repos[i].License.Name
+		}
+
 		projects[i] = ProjectMetaData{
 			ID:          repos[i].ID,
 			Name:        repos[i].FullName,
 			Description: repos[i].Description,
 			Added:       false,
+			Stars:       repos[i].StargazersCount,
+			License:     &license,
 		}
 	}
 
@@ -165,4 +202,14 @@ func (p *projectManager) GetProjectMetaData(id int64, token string) (*BasicRepoM
 	}
 
 	return repoMeta, nil
+}
+
+func (p *projectManager) IsOpenSource(license string) bool {
+	for i := 0; i < len(*p.openSourceLiences); i++ {
+		if (*p.openSourceLiences)[i] == license {
+			return true
+		}
+	}
+
+	return false
 }

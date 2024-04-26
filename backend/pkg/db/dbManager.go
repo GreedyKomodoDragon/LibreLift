@@ -31,6 +31,7 @@ type DBManager interface {
 	GetPaymentAccount(userId int64) (string, bool, error)
 	SetPaymentAccountToActive(id string) error
 	GetAccountIdFeeAndPriceId(repoId, prodId int64, isSubscription bool) (string, string, int64, error)
+	AddToMailingList(email string) error
 }
 
 type postgresManager struct {
@@ -753,4 +754,9 @@ func (p *postgresManager) GetAccountIdFeeAndPriceId(repoId, prodId int64, isSubs
 	}
 
 	return paymentAccountId, priceId, fee, nil
+}
+
+func (p *postgresManager) AddToMailingList(email string) error {
+	_, err := p.conn.Exec(context.Background(), "INSERT into emails values ($1, $2);", email, false)
+	return err
 }

@@ -2,6 +2,7 @@ package rest
 
 import (
 	"librelift/pkg/auth"
+	"librelift/pkg/email"
 	"librelift/pkg/payments"
 	"librelift/pkg/products"
 	"librelift/pkg/projects"
@@ -13,7 +14,8 @@ import (
 )
 
 func NewFiberHttpServer(authManager auth.AuthManager, projectManager projects.ProjectManager,
-	productManager products.ProductsManager, searchManager search.SearchManager, paymentManager payments.PaymentsManager) *fiber.App {
+	productManager products.ProductsManager, searchManager search.SearchManager, paymentManager payments.PaymentsManager,
+	emailManager email.EmailManager) *fiber.App {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
@@ -25,7 +27,7 @@ func NewFiberHttpServer(authManager auth.AuthManager, projectManager projects.Pr
 	}))
 
 	app.Use(func(c *fiber.Ctx) error {
-		if strings.HasSuffix(c.Path(), "/login") || strings.HasSuffix(c.Path(), "/webhook") {
+		if strings.HasSuffix(c.Path(), "/login") || strings.HasSuffix(c.Path(), "/webhook") || strings.Contains(c.Path(), "/email") {
 			return c.Next()
 		}
 
@@ -53,7 +55,7 @@ func NewFiberHttpServer(authManager auth.AuthManager, projectManager projects.Pr
 		return c.Next()
 	})
 
-	addV1(app, authManager, projectManager, productManager, searchManager, paymentManager)
+	addV1(app, authManager, projectManager, productManager, searchManager, paymentManager, emailManager)
 
 	return app
 }

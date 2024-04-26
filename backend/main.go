@@ -4,12 +4,17 @@ import (
 	"context"
 	"librelift/pkg/auth"
 	"librelift/pkg/db"
+	"librelift/pkg/email"
 	"librelift/pkg/payments"
 	"librelift/pkg/products"
 	"librelift/pkg/projects"
 	"librelift/pkg/rest"
 	"librelift/pkg/search"
 	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/joho/godotenv"
@@ -62,6 +67,13 @@ func main() {
 		panic("missing STRIPE_WEBHOOK_KEY")
 	}
 
+	rawOpenSourceLiences := os.Getenv("OPENSOURCE_LICENSE")
+	if rawOpenSourceLiences == "" {
+		panic("missing OPENSOURCE_LICENSE")
+	}
+
+	openSourcLiences := strings.Split(rawOpenSourceLiences, ",")
+
 	cert, err := os.ReadFile(elasticCAPath)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Error getting ca certs")
@@ -100,10 +112,38 @@ func main() {
 	searchManager := search.NewElasticsearchManager(es)
 	authManager := auth.NewAuthManager(clientID, clientSecret)
 
-	projectManager := projects.NewProjectManager(pg)
+	projectManager := projects.NewProjectManager(pg, &openSourcLiences)
 	productManager := products.NewProductManager(pg, paymentManager)
-	app := rest.NewFiberHttpServer(authManager, projectManager, productManager, searchManager, paymentManager)
+	emailManager := email.NewEmailManager(pg)
 
-	log.Info().Int("port", 8080).Msg("listening on port")
-	app.Listen("127.0.0.1:8080")
+	app := rest.NewFiberHttpServer(authManager, projectManager, productManager, searchManager, paymentManager, emailManager)
+
+	// Create a channel to listen for OS signals
+	quit := make(chan os.Signal, 1)
+
+	// syscall.SIGTERM is for kubernetes
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	// Run Fiber server in a separate goroutine
+	go func() {
+		log.Info().Int("port", 8080).Msg("listening on port")
+
+		if err := app.Listen("127.0.0.1:8080"); err != nil {
+			log.Error().Err(err).Msg("Error starting server")
+		}
+	}()
+
+	// Wait for OS signal to gracefully shutdown the server
+	<-quit
+	log.Info().Msg("Shutting down server...")
+
+	// Set a deadline for shutdown
+	ctx, cancelShutdown := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancelShutdown()
+
+	// Shutdown the server gracefully
+	if err := app.ShutdownWithContext(ctx); err != nil {
+		log.Error().Err(err).Msg("Error shutting down server")
+	}
+	log.Info().Msg("Server gracefully stopped")
 }
