@@ -7,6 +7,7 @@ export type Repo = {
   added: boolean;
   stars: number | null;
   license: string | null;
+  isOpenSource: boolean;
 };
 
 export type RepoMetaData = {
@@ -14,9 +15,9 @@ export type RepoMetaData = {
   description: string | null;
 };
 
-export async function GetRepos(): Promise<Repo[]> {
+export async function GetRepos(pageNumber: number): Promise<Repo[]> {
   const results = await axios.get(
-    "http://127.0.0.1:8080/api/v1/project/repos",
+    `http://127.0.0.1:8080/api/v1/project/repos?page=${pageNumber}`,
     {
       withCredentials: true,
     }

@@ -14,6 +14,7 @@ type RepoRow = {
   added: boolean;
   star: number;
   license: string;
+  isOpenSource: boolean;
 };
 
 export default function RepoRow(props: RepoRow) {
@@ -21,7 +22,7 @@ export default function RepoRow(props: RepoRow) {
   const [added, setAdded] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
-  const hasActive = useAccountStore((state) => state.hasActivePaymentAccount)
+  const hasActive = useAccountStore((state) => state.hasActivePaymentAccount);
 
   const add = async () => {
     setIsPending(true);
@@ -51,11 +52,14 @@ export default function RepoRow(props: RepoRow) {
                   ? "No License - Not Open Source!"
                   : props.license}
               </p>
+              <p className="text-sm text-gray-500">
+                Open Source: {props.isOpenSource ? "Yes" : "No"}
+              </p>
             </div>
             <div>
               {isPending ? (
                 <LoadingSpinner size={16} />
-              ) : (props.added || added) && hasActive ? (
+              ) : (props.added || added) && hasActive && props.isOpenSource ? (
                 <>
                   <Link
                     href={`/profile/repositories/${props.id}/products`}
@@ -86,7 +90,7 @@ export default function RepoRow(props: RepoRow) {
                 <button
                   className="inline-flex items-center bg-gray-900 disabled:bg-gray-300 hover:bg-gray-700 text-white py-2 px-4 rounded-lg mr-1"
                   onClick={() => setIsDialogOpen(true)}
-                  disabled={!hasActive}
+                  disabled={!hasActive || !props.isOpenSource}
                 >
                   <img
                     src={"/github-mark.svg"}

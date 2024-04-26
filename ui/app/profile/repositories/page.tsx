@@ -5,17 +5,24 @@ import AccountAlerts from "@/components/profile/AccountAlerts";
 import RepoBlock from "@/components/profile/RepoBlock";
 import { debounce } from "@/lib/utils";
 import { GetRepos, Repo } from "@/rest/github";
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 /* eslint-disable react/jsx-key */
 export default function Repostories() {
-  const router = useRouter();
-  const { isPending, error, data } = useQuery({
-    refetchInterval: 0,
+  const {
+    data,
+    fetchNextPage,
+    isFetching,
+    isFetchingNextPage,
+    error,
+  } = useInfiniteQuery({
     queryKey: ["repoData"],
-    queryFn: () => GetRepos(),
+    queryFn: ({ pageParam }) => GetRepos(pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, pages) => {
+      return pages.length + 1;
+    },
   });
 
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -31,17 +38,22 @@ export default function Repostories() {
   };
 
   const filteredItems = () => {
-    if (data === undefined || data.length === 0) {
+    if (data === undefined || data.pages.length === 0) {
       return [];
     }
 
+    const items: Repo[] = [];
+    for (let index = 0; index < data.pages.length; index++) {
+      items.push(...data.pages[index]);
+    }
+
     if (searchTerm.length === 0) {
-      return data;
+      return items;
     }
 
     const lowerCasedTerm = searchTerm.toLowerCase();
 
-    return data.filter((item) => {
+    return items.filter((item: { name: string }) => {
       return item.name.toLowerCase().includes(lowerCasedTerm);
     });
   };
@@ -49,6 +61,27 @@ export default function Repostories() {
   useEffect(() => {
     setFiltered(filteredItems());
   }, [searchTerm, data]);
+
+  useEffect(() => {
+    // Event listener to check scroll position
+    const handleScroll = () => {
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const bottomOffset = documentHeight - (windowHeight + scrollTop);
+
+      // Load more items when user reaches the bottom 20px of the page
+      // Must limit spamming by only allowing three more attempts
+      if (bottomOffset < 20 && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   return (
     <div className="p-4">
@@ -100,7 +133,7 @@ export default function Repostories() {
             </select>
           </div>
         </div>
-        <RepoBlock isPending={isPending} error={error} data={filtered || []} />
+        <RepoBlock isPending={isFetching} error={error} data={filtered || []} />
       </div>
     </div>
   );

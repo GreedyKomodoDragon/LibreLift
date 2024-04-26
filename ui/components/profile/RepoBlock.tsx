@@ -16,6 +16,27 @@ export default function RepoBlock(props: RepoBlockProps) {
 
   return (
     <div className="flex flex-wrap justify-center">
+      {error && (
+        <div className="mt-10">
+          <p className="text-3xl">
+            Failed to fetch your public Repostories, try again soon!{" "}
+          </p>
+        </div>
+      )}
+
+      {data &&
+        data.map((d) => (
+          <RepoRow
+            id={d.id}
+            name={d.name}
+            description={d.description}
+            added={d.added}
+            star={d.stars || 0}
+            license={d.license || "No License"}
+            isOpenSource={d.isOpenSource}
+          />
+        ))}
+
       {isPending && (
         <div className="mt-4">
           <div className="flex justify-center">
@@ -32,27 +53,6 @@ export default function RepoBlock(props: RepoBlockProps) {
           </div>
         </div>
       )}
-      {error && (
-        <div className="mt-10">
-          <p className="text-3xl">
-            Failed to fetch your public Repostories, try again soon!{" "}
-          </p>
-        </div>
-      )}
-
-      {!isPending &&
-        !error &&
-        data &&
-        data.map((d) => (
-          <RepoRow
-            id={d.id}
-            name={d.name}
-            description={d.description}
-            added={d.added}
-            star={d.stars || 0}
-            license={d.license || "No License"}
-          />
-        ))}
     </div>
   );
 }
