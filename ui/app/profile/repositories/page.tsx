@@ -84,7 +84,7 @@ export default function Repostories() {
   }, []);
 
   return (
-    <div className="p-4">
+    <div className="p-4 h-screen">
       <AccountAlerts />
       <h3 className="ml-8 font-semibold whitespace-nowrap tracking-tight text-4xl">
         Your Open Source Repostories
