@@ -11,6 +11,7 @@ import (
 
 type ProjectManager interface {
 	GetProjectsMetaData(string, int) ([]ProjectMetaData, error)
+	GetProjectMetaDataUsingSearch(string, string, int) ([]ProjectMetaData, error)
 	AddingRepo(id int64, token string) error
 	GetProjectMetaData(id int64, token string) (*BasicRepoMetaData, error)
 	IsOpenSource(license string) bool
@@ -144,6 +145,113 @@ func (p *projectManager) GetProjectsMetaData(token string, page int) ([]ProjectM
 			Description:  repos[i].Description,
 			Added:        false,
 			Stars:        repos[i].StargazersCount,
+			License:      &license,
+			IsOpenSource: openSource,
+		}
+	}
+
+	return projects, nil
+}
+
+func (p *projectManager) GetProjectMetaDataUsingSearch(token string, term string, page int) ([]ProjectMetaData, error) {
+	httpClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	))
+
+	client := github.NewClient(httpClient)
+	user, _, err := client.Users.Get(context.Background(), "")
+	if err != nil {
+		return nil, err
+	}
+
+	// Define the search query
+	query := fmt.Sprintf("user:%s %s", *user.Login, term)
+
+	opts := &github.SearchOptions{
+		ListOptions: github.ListOptions{
+			PerPage: 10,
+			Page:    page,
+		},
+	}
+
+	repos, _, err := client.Search.Repositories(context.Background(), query, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Exit early as no repos
+	if len(repos.Repositories) == 0 {
+		return []ProjectMetaData{}, nil
+	}
+
+	userRepos, err := p.repoDB.GetUsersRepos(*user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	projects := make([]ProjectMetaData, len(repos.Repositories))
+
+	// Initialize pointers
+	repoIndex, userRepoIndex := 0, 0
+
+	for userRepoIndex < len(userRepos) {
+		repo := repos.Repositories[repoIndex]
+
+		for userRepoIndex < len(userRepos) && *repo.ID > userRepos[userRepoIndex] {
+			userRepoIndex++
+		}
+
+		if userRepoIndex >= len(userRepos) {
+			break
+		}
+
+		// Compare repo ID with userRepo ID
+		added := *repo.ID == userRepos[userRepoIndex]
+		if added {
+			// Move userRepoIndex to the next element
+			userRepoIndex++
+		}
+
+		license := ""
+		openSource := false
+		if repo.License != nil && repo.License.Name != nil {
+			license = *repo.License.Name
+			openSource = p.IsOpenSource(*repo.License.Name)
+		}
+
+		projects[repoIndex] = ProjectMetaData{
+			ID:           repo.ID,
+			Name:         repo.FullName,
+			Description:  repo.Description,
+			Added:        added,
+			Stars:        repo.StargazersCount,
+			License:      &license,
+			IsOpenSource: openSource,
+		}
+
+		// Move repoIndex to the next element
+		repoIndex++
+
+		if repoIndex >= len(repos.Repositories) {
+			break
+		}
+	}
+
+	// If there are remaining repos, mark them as not added
+	for i := repoIndex; i < len(repos.Repositories); i++ {
+		license := ""
+		openSource := false
+		if repos.Repositories[i].License != nil && repos.Repositories[i].License.Name != nil {
+			license = *repos.Repositories[i].License.Name
+			openSource = p.IsOpenSource(*repos.Repositories[i].License.Name)
+		}
+
+		projects[i] = ProjectMetaData{
+			ID:           repos.Repositories[i].ID,
+			Name:         repos.Repositories[i].FullName,
+			Description:  repos.Repositories[i].Description,
+			Added:        false,
+			Stars:        repos.Repositories[i].StargazersCount,
 			License:      &license,
 			IsOpenSource: openSource,
 		}

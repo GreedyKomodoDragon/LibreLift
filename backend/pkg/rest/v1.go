@@ -122,6 +122,19 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager, sea
 			pageNumInt = 0
 		}
 
+		search := c.Query("search")
+		if len(search) > 0 {
+			projects, err := projectManager.GetProjectMetaDataUsingSearch(token, search, int(pageNumInt))
+			if err != nil {
+				log.Error().Err(err).Msg("could not get projects")
+				return c.SendStatus(fiber.StatusInternalServerError)
+			}
+
+			return c.Status(fiber.StatusOK).JSON(fiber.Map{
+				"projects": projects,
+			})
+		}
+
 		projects, err := projectManager.GetProjectsMetaData(token, int(pageNumInt))
 		if err != nil {
 			log.Error().Err(err).Msg("could not get projects")
