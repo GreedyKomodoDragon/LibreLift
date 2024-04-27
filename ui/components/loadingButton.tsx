@@ -5,12 +5,14 @@ interface LoadingButtonProps {
   buttonColor: string;
   message: string;
   onClick?: () => Promise<void>;
+  image?: React.ReactNode;
 }
 
 const LoadingButton: React.FC<LoadingButtonProps> = ({
   buttonColor,
   message,
   onClick,
+  image,
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -33,6 +35,7 @@ const LoadingButton: React.FC<LoadingButtonProps> = ({
         className={`flex items-center bg-${buttonColor}-800 hover:bg-${buttonColor}-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline`}
         disabled={loading}
       >
+        {image && <div className="mr-2">{image}</div>}
         <span>{loading ? "Loading..." : message}</span>
 
         {loading && (

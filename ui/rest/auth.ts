@@ -34,7 +34,7 @@ export async function getAvatarURL(): Promise<string> {
 
     return result.data.avatar;
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return "";
   }
 }
@@ -55,4 +55,22 @@ export async function logout() {
       withCredentials: true,
     }
   );
+}
+
+export async function revoke() {
+  await axios.post(
+    "http://127.0.0.1:8080/api/v1/auth/revoke",
+    {},
+    {
+      withCredentials: true,
+    }
+  );
+}
+
+export async function isRevoked(): Promise<boolean> {
+  const result = await axios.get("http://127.0.0.1:8080/api/v1/auth/isPendingRevoke", {
+    withCredentials: true,
+  });
+
+  return result.data.isRevoked;
 }
