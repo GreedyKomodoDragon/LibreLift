@@ -107,13 +107,44 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 	})
 
 	authRouter.Post("/revoke", func(c *fiber.Ctx) error {
-		token := c.Cookies("librelift-token")
-		if err := authManager.MarkAccountAsRevoked(token); err != nil {
+		idRef := c.Locals("userId")
+		if idRef == nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		userId, ok := idRef.(int64)
+		if !ok {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if err := authManager.MarkAccountAsRevoked(userId); err != nil {
 			log.Error().Err(err).Msg("failed to mark account as revoked")
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
 		return c.SendStatus(fiber.StatusOK)
+	})
+
+	authRouter.Get("/isPendingRevoke", func(c *fiber.Ctx) error {
+		idRef := c.Locals("userId")
+		if idRef == nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		userId, ok := idRef.(int64)
+		if !ok {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		isRevoked, err := authManager.IsAccountPendingRevoke(userId)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to get revoked status")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"isRevoked": isRevoked,
+		})
 	})
 }
 

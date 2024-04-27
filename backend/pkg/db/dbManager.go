@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// TODO: Split this into more managable interfaces than a god interface
 type DBManager interface {
 	AddUserAccount(id int64) error
 	AddRepo(username int64, id int64) error
@@ -34,6 +35,7 @@ type DBManager interface {
 	GetAccountIdFeeAndPriceId(repoId, prodId int64, isSubscription bool) (string, string, int64, error)
 	AddToMailingList(email string) error
 	MarkAccountAsRevoked(id int64) error
+	IsAccountPendingRevoke(id int64) (bool, error)
 }
 
 type postgresManager struct {
@@ -776,4 +778,34 @@ func (p *postgresManager) AddUserAccount(id int64) error {
 func (p *postgresManager) MarkAccountAsRevoked(id int64) error {
 	_, err := p.conn.Exec(context.Background(), `SELECT addRevokedAccount($1);`, id)
 	return err
+}
+
+func (p *postgresManager) IsAccountPendingRevoke(id int64) (bool, error) {
+	result, err := p.conn.Query(context.Background(), `
+	SELECT EXISTS (
+		SELECT 1
+		FROM deactivation
+		WHERE account_id = $1
+	) AS value_exists;`, id)
+
+	if err != nil {
+		return false, err
+	}
+	defer result.Close()
+
+	if !result.Next() {
+		return false, fmt.Errorf("unable to get a return")
+	}
+
+	anySlice, err := result.Values()
+	if err != nil {
+		return false, err
+	}
+
+	valueExists, ok := anySlice[0].(bool)
+	if !ok {
+		return false, fmt.Errorf("invalid row structure returned, on value_exists column in IsAccountPendingRevoke")
+	}
+
+	return valueExists, nil
 }
