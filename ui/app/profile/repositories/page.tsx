@@ -5,25 +5,21 @@ import AccountAlerts from "@/components/profile/AccountAlerts";
 import RepoBlock from "@/components/profile/RepoBlock";
 import { debounce } from "@/lib/utils";
 import { GetRepos, Repo } from "@/rest/github";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 /* eslint-disable react/jsx-key */
 export default function Repostories() {
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [items, setItems] = useState<Repo[]>();
-  const [stop, setStop] = useState<boolean>(false);
-
-  const queryClient = useQueryClient();
 
   const { data, fetchNextPage, isFetching, isFetchingNextPage, error } =
     useInfiniteQuery({
-      queryKey: ["repoData"],
+      queryKey: ["repoData", searchTerm],
       queryFn: ({ pageParam }) => GetRepos(pageParam, searchTerm),
       initialPageParam: 1,
       getNextPageParam: (lastPage, pages) => {
-        if (lastPage.length === 0 && !stop) {
-          setStop(true);
+        if (lastPage.length === 0) {
+          return null;
         }
 
         return pages.length + 1;
@@ -39,7 +35,7 @@ export default function Repostories() {
     debouncedFilterItems(term);
   };
 
-  const convertItems = () => {
+  const convertItems = (data: InfiniteData<Repo[], unknown> | undefined) => {
     if (data === undefined || data.pages.length === 0) {
       return [];
     }
@@ -53,14 +49,6 @@ export default function Repostories() {
   };
 
   useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ["repoData"] });
-  }, [searchTerm]);
-
-  useEffect(() => {
-    setItems(convertItems());
-  }, [data]);
-
-  useEffect(() => {
     // Event listener to check scroll position
     const handleScroll = () => {
       const windowHeight = window.innerHeight;
@@ -68,9 +56,8 @@ export default function Repostories() {
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       const bottomOffset = documentHeight - (windowHeight + scrollTop);
 
-      // Load more items when user reaches the bottom 20px of the page
-      // Must limit spamming by only allowing three more attempts
-      if (bottomOffset < 20 && !isFetchingNextPage && !stop) {
+      // Load more items when user reaches the bottom 10px of the page
+      if (bottomOffset < 10 && !isFetchingNextPage) {
         fetchNextPage();
       }
     };
@@ -107,7 +94,7 @@ export default function Repostories() {
             />
           </div>
         </div>
-        <RepoBlock isPending={isFetching} error={error} data={items || []} />
+        <RepoBlock isPending={isFetching} error={error} data={convertItems(data)} />
       </div>
     </div>
   );
