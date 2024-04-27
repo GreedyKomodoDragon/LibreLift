@@ -33,6 +33,7 @@ type DBManager interface {
 	SetPaymentAccountToActive(id string) error
 	GetAccountIdFeeAndPriceId(repoId, prodId int64, isSubscription bool) (string, string, int64, error)
 	AddToMailingList(email string) error
+	MarkAccountAsRevoked(id int64) error
 }
 
 type postgresManager struct {
@@ -769,5 +770,10 @@ func (p *postgresManager) AddUserAccount(id int64) error {
 	ON CONFLICT (id)
 	DO NOTHING;`, id, true)
 
+	return err
+}
+
+func (p *postgresManager) MarkAccountAsRevoked(id int64) error {
+	_, err := p.conn.Exec(context.Background(), `SELECT addRevokedAccount($1);`, id)
 	return err
 }

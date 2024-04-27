@@ -14,6 +14,7 @@ import (
 
 type AuthManager interface {
 	AddUserAccount(token string) error
+	MarkAccountAsRevoked(token string) error
 	GetAccessToken(code string) (string, error)
 	IsValidAccessToken(token string) (int64, bool, error)
 	GetImageURL(token string) (string, error)
@@ -172,4 +173,23 @@ func (a *authManager) AddUserAccount(token string) error {
 	}
 
 	return a.dbManager.AddUserAccount(*user.ID)
+}
+
+func (a *authManager) MarkAccountAsRevoked(token string) error {
+	httpClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	))
+
+	client := github.NewClient(httpClient)
+
+	user, _, err := client.Users.Get(context.Background(), "")
+	if err != nil {
+		return err
+	}
+
+	if user.Login == nil {
+		return fmt.Errorf("missing username from github api")
+	}
+
+	return a.dbManager.MarkAccountAsRevoked(*user.ID)
 }

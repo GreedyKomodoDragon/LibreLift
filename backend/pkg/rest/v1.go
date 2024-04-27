@@ -106,10 +106,10 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 		})
 	})
 
-	authRouter.Post("/logout", func(c *fiber.Ctx) error {
+	authRouter.Post("/revoke", func(c *fiber.Ctx) error {
 		token := c.Cookies("librelift-token")
-		if err := authManager.Logout(token); err != nil {
-			log.Error().Err(err).Msg("failed to log out")
+		if err := authManager.MarkAccountAsRevoked(token); err != nil {
+			log.Error().Err(err).Msg("failed to mark account as revoked")
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
