@@ -23,11 +23,11 @@ export default function Callback() {
             router.push("/login?failed=true");
             return;
           }
-
-          queryClient.invalidateQueries({ queryKey: ["avatar"] });
-
+          
           const cookies = new Cookies(null, { path: "/" });
           cookies.set("librelift-token", token);
+
+          queryClient.invalidateQueries({ queryKey: ["avatar"] });
 
           router.push("/");
         })
@@ -35,7 +35,7 @@ export default function Callback() {
           router.push("/login?failed=true");
         });
     }
-  }, [router]);
+  }, []);
 
   return (
     <div className="justify-center items-center">
