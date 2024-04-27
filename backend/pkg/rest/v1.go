@@ -79,6 +79,12 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 			})
 		}
 
+		// Mark them as registered
+		if err := authManager.AddUserAccount(token); err != nil {
+			log.Error().Err(err).Msg("could not add user to registered user list")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{
 			"token": token,
 		})
@@ -351,7 +357,13 @@ func addSearch(router fiber.Router, searchManager search.SearchManager) {
 			})
 		}
 
-		documents, err := searchManager.Search(query)
+		pageNum := c.Query("page")
+		pageNumInt, err := strconv.ParseInt(pageNum, 10, 64)
+		if err != nil || pageNumInt < 1 {
+			pageNumInt = 1
+		}
+
+		documents, err := searchManager.Search(query, int(pageNumInt))
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}

@@ -13,11 +13,12 @@ import (
 
 type SearchManager interface {
 	CreateSearchDocument(int64, string, string) (string, error)
-	Search(string) ([]SearchDocument, error)
+	Search(string, int) ([]SearchDocument, error)
 }
 
 type elasticsearchManager struct {
 	client *elasticsearch.TypedClient
+	size   int
 }
 
 type SearchDocument struct {
@@ -26,9 +27,10 @@ type SearchDocument struct {
 	Description string `json:"description"`
 }
 
-func NewElasticsearchManager(client *elasticsearch.TypedClient) SearchManager {
+func NewElasticsearchManager(client *elasticsearch.TypedClient, size int) SearchManager {
 	return &elasticsearchManager{
 		client: client,
+		size:   size,
 	}
 }
 
@@ -49,11 +51,15 @@ func (e *elasticsearchManager) CreateSearchDocument(id int64, name string, descr
 }
 
 // SearchUsingTerm implements SearchManager.
-func (e *elasticsearchManager) Search(query string) ([]SearchDocument, error) {
+func (e *elasticsearchManager) Search(query string, page int) ([]SearchDocument, error) {
 	lenient := true
+
+	from := (page - 1) * e.size
 
 	repo, err := e.client.Search().Index("librelift").
 		Request(&search.Request{
+			From: &from,
+			Size: &e.size,
 			Query: &types.Query{MultiMatch: &types.MultiMatchQuery{
 				Query:     query,
 				Lenient:   &lenient,

@@ -109,8 +109,8 @@ func main() {
 	returnURL := "http://127.0.0.1:3000/profile/payments/success"
 
 	paymentManager := payments.NewStripeManager(stripeKey, refreshURL, returnURL, pg)
-	searchManager := search.NewElasticsearchManager(es)
-	authManager := auth.NewAuthManager(clientID, clientSecret)
+	searchManager := search.NewElasticsearchManager(es, 5)
+	authManager := auth.NewAuthManager(clientID, clientSecret, pg)
 
 	projectManager := projects.NewProjectManager(pg, &openSourcLiences)
 	productManager := products.NewProductManager(pg, paymentManager)

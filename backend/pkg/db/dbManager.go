@@ -10,6 +10,7 @@ import (
 )
 
 type DBManager interface {
+	AddUserAccount(id int64) error
 	AddRepo(username int64, id int64) error
 	GetUsersRepos(username int64) ([]int64, error)
 	GetAllProducts() ([]Product, error)
@@ -758,5 +759,15 @@ func (p *postgresManager) GetAccountIdFeeAndPriceId(repoId, prodId int64, isSubs
 
 func (p *postgresManager) AddToMailingList(email string) error {
 	_, err := p.conn.Exec(context.Background(), "INSERT into emails values ($1, $2);", email, false)
+	return err
+}
+
+func (p *postgresManager) AddUserAccount(id int64) error {
+	_, err := p.conn.Exec(context.Background(), `
+	INSERT INTO accounts
+	VALUES ($1, $2)
+	ON CONFLICT (id)
+	DO NOTHING;`, id, true)
+
 	return err
 }
