@@ -13,6 +13,7 @@ export type Repo = {
 export type RepoMetaData = {
   name: string;
   description: string | null;
+  revokedPending: boolean;
 };
 
 export async function GetRepos(

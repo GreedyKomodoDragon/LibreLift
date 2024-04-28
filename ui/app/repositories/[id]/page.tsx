@@ -2,6 +2,7 @@
 "use client";
 
 import LoadingSpinner from "@/components/LoadingSpinner";
+import WarningMessage from "@/components/profile/WarningMessage";
 import ResourcePurchaseBox from "@/components/resourcePurchaseBox";
 import { GetRepoMetaData } from "@/rest/github";
 import { getRepoOptions } from "@/rest/products";
@@ -19,7 +20,7 @@ export default function Page({ params }: { params: { id: string } }) {
 
   const meta = useQuery({
     refetchInterval: 0,
-    queryKey: ['repo', params.id],
+    queryKey: ["repo", params.id],
     queryFn: () => GetRepoMetaData(Number(params.id)),
   });
 
@@ -29,6 +30,11 @@ export default function Page({ params }: { params: { id: string } }) {
         {meta.isPending && (
           <div className="flex flex-wrap justify-center">
             <LoadingSpinner size={16} />
+          </div>
+        )}
+        {!meta.isPending && meta.data && meta.data.revokedPending && (
+          <div className="mb-5">
+            <WarningMessage message="Owner of this repository is currently deleting their account, you cannot make any purchases" />
           </div>
         )}
         {!meta.isPending && meta.data && (
@@ -57,11 +63,16 @@ export default function Page({ params }: { params: { id: string } }) {
                   url={d.url}
                   hasSubscription={false}
                   oneTimePayment={() => {
-                    router.push(`/checkout?productID=${d.id}&repoID=${params.id}`)
+                    router.push(
+                      `/checkout?productID=${d.id}&repoID=${params.id}`
+                    );
                   }}
                   subscribe={() => {
-                    router.push(`/checkout?productID=${d.id}&repoID=${params.id}&subscription=true`)
+                    router.push(
+                      `/checkout?productID=${d.id}&repoID=${params.id}&subscription=true`
+                    );
                   }}
+                  disabled={meta.data ? meta.data.revokedPending : false}
                 />
               </div>
             ))}

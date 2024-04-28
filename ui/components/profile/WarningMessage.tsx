@@ -3,8 +3,8 @@ import LoadingButton from "../loadingButton";
 
 interface WarningMessageProps {
   message: string;
-  onDismissClick: () => void;
-  onCreateAccountClick: () => Promise<void>;
+  onDismissClick?: () => void;
+  onCreateAccountClick?: () => Promise<void>;
 }
 
 const WarningMessage: React.FC<WarningMessageProps> = ({
@@ -36,19 +36,21 @@ const WarningMessage: React.FC<WarningMessageProps> = ({
           <p>{message}</p>
         </div>
       </div>
-      <div className="flex">
-        <LoadingButton
-          buttonColor={"blue"}
-          message={"Create Account"}
-          onClick={onCreateAccountClick}
-        />
-        <button
-          onClick={onDismissClick}
-          className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded ml-2"
-        >
-          Dismiss
-        </button>
-      </div>
+      {onCreateAccountClick && onDismissClick && (
+        <div className="flex">
+          <LoadingButton
+            buttonColor={"blue"}
+            message={"Create Account"}
+            onClick={onCreateAccountClick}
+          />
+          <button
+            onClick={onDismissClick}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded ml-2"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
     </div>
   );
 };

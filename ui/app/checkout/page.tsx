@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import React, { useCallback } from "react";
 import { loadStripe } from "@stripe/stripe-js";
@@ -33,17 +33,22 @@ export default function CheckoutForm() {
     const subscription = searchParams.get("subscription");
 
     // Create a Checkout Session
-    const response = await axios.post(
-      "http://127.0.0.1:8080/api/v1/payments/create/session",
-      {
-        productId: Number(productID),
-        repoId: Number(repoID),
-        isSubscription: subscription === "true"
-      },
-      { withCredentials: true }
-    );
-
-    return response.data.clientSecret;
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8080/api/v1/payments/create/session",
+        {
+          productId: Number(productID),
+          repoId: Number(repoID),
+          isSubscription: subscription === "true",
+        },
+        { withCredentials: true }
+      );
+      return response.data.clientSecret;
+    } catch (error) {
+      // Might get here if the user has tried to make a subscription or purchased on a deactivated producted
+      router.push("/");
+      return;
+    }
   }, [router, searchParams]);
 
   const options = { fetchClientSecret };

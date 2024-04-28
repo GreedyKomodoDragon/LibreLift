@@ -1,6 +1,4 @@
-import { useAccountStore } from "@/store/store";
 import axios from "axios";
-import Cookies from "universal-cookie";
 
 export async function getToken(): Promise<string> {
   const config = await fetch("/config.json");

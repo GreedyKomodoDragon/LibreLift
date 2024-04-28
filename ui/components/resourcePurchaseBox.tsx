@@ -8,6 +8,7 @@ type ResourcePurchaseBoxProps = {
   hasSubscription: boolean;
   oneTimePayment: MouseEventHandler<HTMLButtonElement>;
   subscribe: MouseEventHandler<HTMLButtonElement>;
+  disabled?: boolean;
 };
 
 export default function ResourcePurchaseBox(props: ResourcePurchaseBoxProps) {
@@ -21,8 +22,9 @@ export default function ResourcePurchaseBox(props: ResourcePurchaseBoxProps) {
         <p className="text-gray-600 mb-2">{props.pricing}</p>
         <div className="flex justify-center items-center">
           <button
-            className="inline-flex min-h-[3rem] items-center bg-gray-900 hover:bg-gray-700 text-white py-2 px-4 rounded-lg mr-1"
+            className="inline-flex min-h-[3rem] items-center disabled:bg-gray-700  bg-gray-900 hover:bg-gray-700 text-white py-2 px-4 rounded-lg mr-1"
             onClick={props.oneTimePayment}
+            disabled={props.disabled !== undefined && props.disabled}
           >
             One-Time Payment
           </button>
@@ -32,8 +34,9 @@ export default function ResourcePurchaseBox(props: ResourcePurchaseBoxProps) {
             </button>
           ) : (
             <button
-              className="min-h-[3rem] text-lg items-center bg-green-800 hover:bg-green-700 text-white py-2 px-4 rounded-lg"
+              className="min-h-[3rem] disabled:bg-gray-700 text-lg items-center bg-green-800 hover:bg-green-700 text-white py-2 px-4 rounded-lg"
               onClick={props.subscribe}
+              disabled={props.disabled !== undefined && props.disabled}
             >
               Subscribe
             </button>
