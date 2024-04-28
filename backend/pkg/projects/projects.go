@@ -23,8 +23,9 @@ type projectManager struct {
 }
 
 type BasicRepoMetaData struct {
-	Name        *string `json:"name"`
-	Description *string `json:"description"`
+	Name           *string `json:"name"`
+	Description    *string `json:"description"`
+	RevokedPending bool    `json:"revokedPending"`
 }
 
 type ProjectMetaData struct {
@@ -296,9 +297,15 @@ func (p *projectManager) GetProjectMetaData(id int64, token string) (*BasicRepoM
 		return nil, fmt.Errorf("Error fetching repository: %v", id)
 	}
 
+	revoked, err := p.repoDB.IsRepoOwnedByRevokePendingUser(id)
+	if err != nil {
+		return nil, fmt.Errorf("Error fetching revoked status: %v", id)
+	}
+
 	repoMeta := &BasicRepoMetaData{
-		Name:        repo.FullName,
-		Description: repo.Description,
+		Name:           repo.FullName,
+		Description:    repo.Description,
+		RevokedPending: revoked,
 	}
 
 	if repoMeta.Description == nil {

@@ -36,6 +36,7 @@ type DBManager interface {
 	AddToMailingList(email string) error
 	MarkAccountAsRevoked(id int64) error
 	IsAccountPendingRevoke(id int64) (bool, error)
+	IsRepoOwnedByRevokePendingUser(repoId int64) (bool, error)
 }
 
 type postgresManager struct {
@@ -700,14 +701,19 @@ func (p *postgresManager) GetAccountIdFeeAndPriceId(repoId, prodId int64, isSubs
 	// TODO: Make string queries more efficient by not re-generating each time
 	sql := `
 	SELECT pa.paymentAccountId AS accountPaymentId,
-		rp.oneOffId,
-		pr.fee AS productFee
+       rp.oneOffId,
+       pr.fee AS productFee
 	FROM repo_products rp
 	JOIN products pr ON rp.product_id = pr.id
 	JOIN repotable rt ON rp.repo_id = rt.id
 	JOIN paymentAccounts pa ON rt.user_id = pa.userId
 	WHERE rp.repo_id = $2
-	AND rp.product_id = $1;`
+	AND rp.product_id = $1
+	AND NOT EXISTS (
+		SELECT 1
+		FROM deactivation d
+		WHERE d.account_id = pa.userId
+	);`
 
 	if isSubscription {
 		sql = `
@@ -719,7 +725,12 @@ func (p *postgresManager) GetAccountIdFeeAndPriceId(repoId, prodId int64, isSubs
 		JOIN repotable rt ON rp.repo_id = rt.id
 		JOIN paymentAccounts pa ON rt.user_id = pa.userId
 		WHERE rp.repo_id = $2
-		AND rp.product_id = $1;`
+		AND rp.product_id = $1
+		AND NOT EXISTS (
+			SELECT 1
+			FROM deactivation d
+			WHERE d.account_id = pa.userId
+		);`
 	}
 
 	result, err := p.conn.Query(context.Background(), sql, prodId, repoId)
@@ -730,7 +741,7 @@ func (p *postgresManager) GetAccountIdFeeAndPriceId(repoId, prodId int64, isSubs
 	defer result.Close()
 
 	if !result.Next() {
-		return "", "", 0, fmt.Errorf("unable to get row")
+		return "", "", 0, fmt.Errorf("unable to get row, may be deactived")
 	}
 
 	anySlice, err := result.Values()
@@ -808,4 +819,38 @@ func (p *postgresManager) IsAccountPendingRevoke(id int64) (bool, error) {
 	}
 
 	return valueExists, nil
+}
+
+func (p *postgresManager) IsRepoOwnedByRevokePendingUser(id int64) (bool, error) {
+	result, err := p.conn.Query(context.Background(), `
+	SELECT
+       CASE
+           WHEN d.account_id IS NOT NULL THEN TRUE
+           ELSE FALSE
+       END AS is_deactivated
+	FROM repotable r
+	LEFT JOIN deactivation d ON r.user_id = d.account_id
+	WHERE r.id = $1;`, id)
+
+	if err != nil {
+		return false, err
+	}
+	defer result.Close()
+
+	if !result.Next() {
+		return false, fmt.Errorf("unable to get a return")
+	}
+
+	anySlice, err := result.Values()
+	if err != nil {
+		return false, err
+	}
+
+	isDeactivated, ok := anySlice[0].(bool)
+	if !ok {
+		return false, fmt.Errorf("invalid row structure returned, on isDeactivated column in IsRepoOwnedByRevokePendingUser")
+	}
+
+	return isDeactivated, nil
+
 }
