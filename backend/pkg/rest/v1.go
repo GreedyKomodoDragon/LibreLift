@@ -320,6 +320,7 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 		token := c.Cookies("librelift-token")
 		ok, err = authManager.IsRepoOwner(token, id)
 		if err != nil {
+			log.Error().Err(err).Msg("failed to check if repo is owner's")
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
@@ -327,6 +328,17 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 				"message": "must be owner",
 			})
+		}
+
+		ok, err = authManager.IsAccountPendingRevoke(id)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to check if repo is owner's")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if !ok {
+			log.Error().Msg("owner is having their account revoked")
+			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
 		_, ok, err = paymentManager.GetPaymentAccount(id)
