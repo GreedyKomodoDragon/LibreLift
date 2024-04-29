@@ -3,36 +3,34 @@
 
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ProductGroupButton from "@/components/profile/ProductGroupButton";
+import WarningMessage from "@/components/profile/WarningMessage";
 import ResourcePriceBox from "@/components/resourcePriceBox";
 import Searchbar from "@/components/searchbar";
+import { GetRepoMetaData } from "@/rest/github";
 import {
   RepoProduct,
   addProductToRepo,
   getRepoProducts,
 } from "@/rest/products";
-import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 export default function Page({ params }: { params: { id: string } }) {
   const [option, setOption] = useState<string>("selected");
-  const [data, setData] = useState<RepoProduct[] | undefined>([]);
-  const [isPending, setPending] = useState<boolean>(true);
-  const [error, setError] = useState<boolean>(false);
 
-  const reload = async () => {
-    setPending(true);
-    try {
-      const products = await getRepoProducts(params.id);
-      setData(products);
-      setError(false);
-    } catch (error) {
-      setError(true);
-    }
-    setPending(false);
-  };
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    reload();
-  }, []);
+  const { data, isPending, error } = useQuery({
+    refetchInterval: 0,
+    queryKey: ["repo-products", params.id],
+    queryFn: () => getRepoProducts(params.id),
+  });
+
+  const meta = useQuery({
+    refetchInterval: 0,
+    queryKey: ["repo", params.id],
+    queryFn: () => GetRepoMetaData(Number(params.id)),
+  });
 
   const showProducts = (data: RepoProduct[] | undefined) => {
     switch (option) {
@@ -81,10 +79,13 @@ export default function Page({ params }: { params: { id: string } }) {
                         url={d.url}
                         option={true}
                         added={d.isAdded}
+                        disabled={meta.data?.revokedPending}
                         onAddClick={async () => {
                           try {
                             await addProductToRepo(d.id, Number(params.id));
-                            reload();
+                            await queryClient.invalidateQueries({
+                              queryKey: ["repo-products", params.id],
+                            });
                           } catch (error) {
                             console.error(error);
                           }
@@ -124,8 +125,15 @@ export default function Page({ params }: { params: { id: string } }) {
 
   return (
     <div className="p-4">
+      {!meta.isPending && meta.data && meta.data.revokedPending && (
+        <div className="mb-5">
+          <WarningMessage message="Cannot add products to repository if your account is pending deactivation" />
+        </div>
+      )}
       <div className="p-4">
-        <h1 className="text-4xl">Products List</h1>
+        <h1 className="text-4xl">
+          {!meta.isPending && meta.data && meta.data.name}
+        </h1>
         <h1 className="text-2xl ml-4">Repo: {params.id}</h1>
       </div>
       <Searchbar />

@@ -6,6 +6,7 @@ interface LoadingButtonProps {
   message: string;
   onClick?: () => Promise<void>;
   image?: React.ReactNode;
+  disabled?: boolean;
 }
 
 const LoadingButton: React.FC<LoadingButtonProps> = ({
@@ -13,6 +14,7 @@ const LoadingButton: React.FC<LoadingButtonProps> = ({
   message,
   onClick,
   image,
+  disabled
 }) => {
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -32,8 +34,8 @@ const LoadingButton: React.FC<LoadingButtonProps> = ({
     <div>
       <button
         onClick={handleClick}
-        className={`flex items-center bg-${buttonColor}-800 hover:bg-${buttonColor}-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline`}
-        disabled={loading}
+        className={`flex items-center bg-${buttonColor}-800 hover:bg-${buttonColor}-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:bg-gray-700`}
+        disabled={loading || (disabled !== undefined && disabled)}
       >
         {image && <div className="mr-2">{image}</div>}
         <span>{loading ? "Loading..." : message}</span>
