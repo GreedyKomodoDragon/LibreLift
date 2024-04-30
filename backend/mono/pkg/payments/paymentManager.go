@@ -67,12 +67,22 @@ func (s *stripeManager) CreateCheckoutSession(priceId string, subcription bool, 
 		},
 		Mode:     mode,
 		Metadata: metadata,
-		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{
+	}
+
+	if subcription {
+		params.SubscriptionData = &stripe.CheckoutSessionSubscriptionDataParams{
+			ApplicationFeePercent: stripe.Float64(0.1),
+			TransferData: &stripe.CheckoutSessionSubscriptionDataTransferDataParams{
+				Destination: stripe.String(accountPaymentId),
+			},
+		}
+	} else {
+		params.PaymentIntentData = &stripe.CheckoutSessionPaymentIntentDataParams{
 			ApplicationFeeAmount: stripe.Int64(fee),
 			TransferData: &stripe.CheckoutSessionPaymentIntentDataTransferDataParams{
 				Destination: stripe.String(accountPaymentId),
 			},
-		},
+		}
 	}
 
 	sess, err := session.New(params)

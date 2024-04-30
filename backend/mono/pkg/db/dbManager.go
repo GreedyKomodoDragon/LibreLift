@@ -805,7 +805,8 @@ func (p *postgresManager) IsAccountPendingRevoke(id int64) (bool, error) {
 	defer result.Close()
 
 	if !result.Next() {
-		return false, fmt.Errorf("unable to get a return")
+		// If there is no record then it means user is not revoked
+		return false, nil
 	}
 
 	anySlice, err := result.Values()
@@ -838,7 +839,8 @@ func (p *postgresManager) IsRepoOwnedByRevokePendingUser(id int64) (bool, error)
 	defer result.Close()
 
 	if !result.Next() {
-		return false, fmt.Errorf("unable to get a return")
+		// No row would mean that there is no row in deactivation
+		return false, nil
 	}
 
 	anySlice, err := result.Values()

@@ -299,7 +299,7 @@ func (p *projectManager) GetProjectMetaData(id int64, token string) (*BasicRepoM
 
 	revoked, err := p.repoDB.IsRepoOwnedByRevokePendingUser(id)
 	if err != nil {
-		return nil, fmt.Errorf("Error fetching revoked status: %v", id)
+		return nil, err
 	}
 
 	repoMeta := &BasicRepoMetaData{

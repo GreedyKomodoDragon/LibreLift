@@ -63,6 +63,15 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 		return c.SendStatus(fiber.StatusOK)
 	})
 
+	authRouter.Post("/logout", func(c *fiber.Ctx) error {
+		token := c.Cookies("librelift-token")
+		if err := authManager.Logout(token); err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.SendStatus(fiber.StatusOK)
+	})
+
 	authRouter.Post("/login", func(c *fiber.Ctx) error {
 		var req LoginReq
 		if err := c.BodyParser(&req); err != nil {
@@ -223,6 +232,7 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager, sea
 		repo, err := projectManager.GetProjectMetaData(id, token)
 		if err != nil {
 			// TODO: Return code based on error
+			log.Error().Err(err).Msg("could not get project information")
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "failed to get project information",
 			})
@@ -336,7 +346,7 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		if !ok {
+		if ok {
 			log.Error().Msg("owner is having their account revoked")
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
