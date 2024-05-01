@@ -533,7 +533,7 @@ func (p *postgresManager) UpdateSubScriptionToPending(id string) error {
 }
 
 func (p *postgresManager) EndSubscription(id string) error {
-	sql := "UPDATE purchases SET stat = 'refunded' WHERE paymentId = $1 AND stat = 'pending';"
+	sql := "UPDATE purchases SET stat = 'refunded' WHERE paymentId = $1;"
 
 	result, err := p.conn.Exec(context.Background(), sql, id)
 	if err != nil {
