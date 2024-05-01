@@ -33,15 +33,7 @@ func NewDBManager(connectionURL string) (DBManager, error) {
 }
 
 func (p *postgresManager) MarkAndGetExpiredSubscriptions() ([]*UserSubs, error) {
-	result, err := p.conn.Query(context.Background(), `
-	SELECT account_id, paymentid
-	FROM deactivation
-	JOIN repotable rt on deactivation.account_id = rt.user_id
-	JOIN purchases p on rt.id = p.repo_id
-	WHERE p.isoneoff = FALSE AND
-	deactivation.deactivated_at <= NOW() - INTERVAL '30 days'
-	ORDER BY account_id;`)
-
+	result, err := p.conn.Query(context.Background(), `SELECT * FROM process_deactivated_accounts_and_update();`)
 	if err != nil {
 		return nil, err
 	}
@@ -86,6 +78,13 @@ func (p *postgresManager) MarkAndGetExpiredSubscriptions() ([]*UserSubs, error) 
 	return userSubs, nil
 }
 
-func (p *postgresManager) DeleteCompletedUsers([]int64) error {
+func (p *postgresManager) DeleteCompletedUsers(users []int64) error {
+	// TODO: in one transaction
+	// Drop row from deactivation
+	// Drop row from accounts
+	// Drop rows from repo_products
+	// Drop rows from repotable
+	// Return the list of repos to delete, this will be used to remove all the indexes
+
 	return nil
 }

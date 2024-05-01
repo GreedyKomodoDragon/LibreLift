@@ -28,8 +28,8 @@ func (s *stripeManager) MarkSubscriptionForDeletion(subId *string) error {
 		return fmt.Errorf("passed in argument is nil")
 	}
 
-	params := &stripe.SubscriptionParams{CancelAtPeriodEnd: stripe.Bool(true)}
-	if _, err := subscription.Update(*subId, params); err != nil {
+	params := &stripe.SubscriptionCancelParams{}
+	if _, err := subscription.Cancel(*subId, params); err != nil {
 		return err
 	}
 

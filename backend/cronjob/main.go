@@ -1,4 +1,4 @@
-package cronjob
+package main
 
 import (
 	"librelift-revoked/pkg/db"
