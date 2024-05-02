@@ -25,7 +25,7 @@ func addV1(app *fiber.App, authManager auth.AuthManager, projectManager projects
 	router := app.Group("/api/v1")
 
 	addAuth(router, authManager)
-	addProject(router, projectManager, searchManager, paymentManager)
+	addProject(router, projectManager, searchManager, paymentManager, authManager)
 	addProducts(router, productManager, authManager, paymentManager)
 	addSearch(router, searchManager)
 	addPayments(router, productManager, paymentManager)
@@ -157,7 +157,8 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 	})
 }
 
-func addProject(router fiber.Router, projectManager projects.ProjectManager, searchManager search.SearchManager, paymentManager payments.PaymentsManager) {
+func addProject(router fiber.Router, projectManager projects.ProjectManager, searchManager search.SearchManager,
+	paymentManager payments.PaymentsManager, authManager auth.AuthManager) {
 	projectRouter := router.Group("/project")
 
 	projectRouter.Get("/repos", func(c *fiber.Ctx) error {
@@ -223,6 +224,18 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager, sea
 		userId, ok := idRef.(int64)
 		if !ok {
 			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		// TODO: Move this to middleware
+		ok, err = authManager.IsAccountPendingRevoke(userId)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to check if repo is owner's")
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if ok {
+			log.Error().Msg("owner is having their account revoked")
+			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
 		if _, ok, err := paymentManager.GetPaymentAccount(userId); err != nil || !ok {
