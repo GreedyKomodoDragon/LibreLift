@@ -9,7 +9,7 @@ import (
 
 type DBManager interface {
 	MarkAndGetExpiredSubscriptions() ([]*UserSubs, error)
-	DeleteCompletedUsers([]int64) error
+	DeleteCompletedUsersAndGetRepos([]int64) ([]int64, error)
 }
 
 type postgresManager struct {
@@ -78,13 +78,32 @@ func (p *postgresManager) MarkAndGetExpiredSubscriptions() ([]*UserSubs, error) 
 	return userSubs, nil
 }
 
-func (p *postgresManager) DeleteCompletedUsers(users []int64) error {
-	// TODO: in one transaction
-	// Drop row from deactivation
-	// Drop row from accounts
-	// Drop rows from repo_products
-	// Drop rows from repotable
-	// Return the list of repos to delete, this will be used to remove all the indexes
+func (p *postgresManager) DeleteCompletedUsersAndGetRepos(users []int64) ([]int64, error) {
+	result, err := p.conn.Query(context.Background(), `SELECT * FROM remove_user_and_their_references($1::BIGINT[]);`, users)
+	if err != nil {
+		return nil, err
+	}
+	defer result.Close()
 
-	return nil
+	repoids := []int64{}
+	for result.Next() {
+		anySlice, err := result.Values()
+		if err != nil {
+			return nil, err
+		}
+
+		if len(anySlice) != 1 {
+			return nil, fmt.Errorf("invalid data length returned")
+		}
+
+		repoId, ok := anySlice[0].(int64)
+		if !ok {
+			return nil, fmt.Errorf("invalid row structure returned, on repoId column in DeleteCompletedUsersAndGetRepos")
+		}
+
+		repoids = append(repoids, repoId)
+
+	}
+
+	return repoids, nil
 }
