@@ -139,7 +139,7 @@ export default function NavigationBar() {
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => setIsOpen(false)}
                 >
-                  My Open Source Repositories
+                  My Repositories
                 </Link>
                 <Link
                   href="/profile/dashboard"
@@ -169,9 +169,9 @@ export default function NavigationBar() {
                   className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() =>
                     logout()
-                      .then(() => {
+                      .then(async () => {
                         setIsOpen(false);
-                        queryClient.invalidateQueries({ queryKey: ["avatar"] });
+                        await queryClient.invalidateQueries({ queryKey: ["avatar"] });
                         const cookies = new Cookies(null, { path: "/" });
                         cookies.remove("librelift-token");
                       })

@@ -18,7 +18,7 @@ export default function Callback() {
 
     if (code) {
       login(code)
-        .then((token) => {
+        .then(async (token) => {
           if (token.length === 0) {
             router.push("/login?failed=true");
             return;
@@ -27,7 +27,7 @@ export default function Callback() {
           const cookies = new Cookies(null, { path: "/" });
           cookies.set("librelift-token", token);
 
-          queryClient.invalidateQueries({ queryKey: ["avatar"] });
+          await queryClient.invalidateQueries({ queryKey: ["avatar"] });
 
           router.push("/");
         })

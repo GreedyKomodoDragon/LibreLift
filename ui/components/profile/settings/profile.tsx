@@ -15,7 +15,7 @@ export default function Profile() {
   const handleRevoke = async () => {
     try {
       await revoke();
-      queryClient.invalidateQueries({ queryKey: ["revoked"] });
+      await queryClient.invalidateQueries({ queryKey: ["revoked"] });
     } catch (error) {
       console.error(error);
     }
@@ -30,7 +30,7 @@ export default function Profile() {
             Revoking GitHub Access
           </h2>
           <p className="text-base text-gray-600 dark:text-gray-400 mb-4">
-            By revoking access to GitHub, you'll deactivate your account and
+            By revoking access to GitHub, you will deactivate your account and
             undergo a 30-day period with the following actions:
           </p>
           <ul className="list-disc ml-6 mb-4">

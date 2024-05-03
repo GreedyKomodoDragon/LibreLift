@@ -56,9 +56,9 @@ export default function Home() {
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                       className="h-10 w-10 text-gray-900 dark:text-gray-50"
                     >
                       <polyline points="20 12 20 22 4 22 4 12"></polyline>
@@ -83,9 +83,9 @@ export default function Home() {
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                       className="h-10 w-10 text-gray-900 dark:text-gray-50"
                     >
                       <path d="m4 5 8 8"></path>
@@ -106,9 +106,9 @@ export default function Home() {
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                       className="h-10 w-10 text-gray-900 dark:text-gray-50"
                     >
                       <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
@@ -129,9 +129,9 @@ export default function Home() {
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                       className="h-10 w-10 text-gray-900 dark:text-gray-50"
                     >
                       <circle cx="12" cy="12" r="10"></circle>
@@ -139,7 +139,7 @@ export default function Home() {
                     </svg>
                     <h3 className="text-2xl font-semibold">Open Source</h3>
                     <p className="text-gray-500 dark:text-gray-400">
-                      We believe in the power of open source, so we've open
+                      We believe in the power of open source, so we&apos;ve open
                       sourced parts of our platform to give back to the
                       community.
                     </p>
@@ -152,9 +152,9 @@ export default function Home() {
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                       className="h-10 w-10 text-gray-900 dark:text-gray-50"
                     >
                       <path d="M5 12s2.545-5 7-5c4.454 0 7 5 7 5s-2.546 5-7 5c-4.455 0-7-5-7-5z"></path>
@@ -165,7 +165,7 @@ export default function Home() {
                     <h3 className="text-2xl font-semibold">Secure Payments</h3>
                     <p className="text-gray-500 dark:text-gray-400">
                       We use Stripe to manage payments, we leave the finances to
-                      the experts! If you don't have a stripe business account
+                      the experts! If you do not have a stripe business account
                       you will need to sign up to one before you can accept
                       payments
                     </p>
@@ -178,9 +178,9 @@ export default function Home() {
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                       className="h-10 w-10 text-gray-900 dark:text-gray-50"
                     >
                       <circle cx="12" cy="12" r="10"></circle>
@@ -303,10 +303,10 @@ export default function Home() {
                   <div className="space-y-4">
                     <h3 className="text-3xl font-bold">Our Mission</h3>
                     <p className="text-gray-500 dark:text-gray-400">
-                      We're passionate about open source software—it's the
-                      backbone of today's digital world. Our mission is simple:
+                      We are passionate about open source software, it is the
+                      backbone of today&apos;s digital world. Our mission is simple:
                       support the amazing developers who make it all happen.
-                      We're dedicated to making it effortless for users to back
+                      We&apos;re dedicated to making it effortless for users to back
                       their favorite open source projects, ensuring they can
                       continue to flourish and expand.
                     </p>
@@ -314,7 +314,7 @@ export default function Home() {
                       e believe that by empowering developers and users alike,
                       we can cultivate a collaborative community where
                       creativity knows no bounds and the potential of open
-                      source software is fully unleashed. Together, let's keep
+                      source software is fully unleashed. Together, let&apos;s keep
                       the open source spirit strong!
                     </p>
                   </div>
@@ -330,13 +330,13 @@ export default function Home() {
       <footer className="w-full bg-violet-950 text-gray-50 py-4">
         <div className="container px-4 md:px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <nav className="flex gap-4 sm:gap-6">
-            <a className="text-sm hover:underline" href="#">
+            <a className="text-sm hover:underline" href="/term-of-service">
               Terms of Service
             </a>
-            <a className="text-sm hover:underline" href="#">
+            <a className="text-sm hover:underline" href="/privacy-policy">
               Privacy Policy
             </a>
-            <a className="text-sm hover:underline" href="#">
+            <a className="text-sm hover:underline" href="https://github.com/GreedyKomodoDragon/LibreLift">
               Open Source
             </a>
           </nav>
