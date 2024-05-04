@@ -15,7 +15,7 @@ type DBManager interface {
 	AddRepo(username int64, id int64) error
 	GetUsersRepos(username int64) ([]int64, error)
 	GetAllProducts() ([]Product, error)
-	GetAllProductsForRepo(repoId int64) ([]RepoProduct, error)
+	GetAllProductsForRepo(repoId int64, term, option string, page int64) ([]Product, error)
 	AddProductToRepo(productId, repoId int64, oneOffId, recurringId string) error
 	GetRepoOptions(repoId int64) ([]RepoOption, error)
 	GetProductNameAndPrice(prodId int64) (string, int64, error)
@@ -49,15 +49,6 @@ type Product struct {
 	URL   string `json:"url"`
 	Price int64  `json:"price"`
 }
-
-type RepoProduct struct {
-	Id      int64  `json:"id"`
-	Name    string `json:"name"`
-	URL     string `json:"url"`
-	Price   int64  `json:"price"`
-	IsAdded bool   `json:"isAdded"`
-}
-
 type RepoOption struct {
 	Id    int64  `json:"id"`
 	Name  string `json:"name"`
@@ -143,29 +134,203 @@ func (p *postgresManager) GetAllProducts() ([]Product, error) {
 	return *products, nil
 }
 
-func (p *postgresManager) GetAllProductsForRepo(repoId int64) ([]RepoProduct, error) {
-	results, err := p.conn.Query(context.Background(), `
-	SELECT 
-    	CASE 
-        	WHEN products.id in (select product_id from repo_products where repo_id = $1) THEN true 
-        	ELSE false 
-    	END AS isSelected, 
-		prod_name, url, price, id
-	FROM products;
-	`, repoId)
+func (p *postgresManager) GetAllProductsForRepo(repoId int64, term, option string, page int64) ([]Product, error) {
+	offset := (page - 1) * 10
 
+	switch option {
+	case "selected":
+		products, err := p.getSelectedProducts(repoId, term, offset)
+		if err != nil {
+			return nil, err
+		}
+
+		return *products, nil
+	case "unselected":
+		products, err := p.getUnselectedProducts(repoId, term, offset)
+		if err != nil {
+			return nil, err
+		}
+		return *products, nil
+	default:
+		products, err := p.getAllProducts(term, offset)
+		if err != nil {
+			return nil, err
+		}
+		return *products, nil
+	}
+}
+
+func (p *postgresManager) getSelectedProducts(repoId int64, term string, offset int64) (*[]Product, error) {
+	sql := `
+		SELECT p.prod_name, p.url, p.price, p.id
+		FROM products p
+		JOIN repo_products rp ON p.id = rp.product_id
+		WHERE rp.repo_id = $1
+		AND ($2 = '' OR LOWER(p.prod_name) LIKE LOWER($2))
+		ORDER BY p.prod_name
+		LIMIT 10 OFFSET $3;
+		`
+
+	results, err := p.conn.Query(context.Background(), sql, repoId, "%"+term+"%", offset)
 	if err != nil {
 		return nil, err
 	}
 	defer results.Close()
 
-	products, err := p.convertRowsToRepoProduct(results)
+	return p.convertRowsToRepoProduct(results)
+}
+
+func (p *postgresManager) getUnselectedProducts(repoId int64, term string, offset int64) (*[]Product, error) {
+	sql := `
+		SELECT p.prod_name, p.url, p.price, p.id
+		FROM products p
+		LEFT JOIN repo_products rp ON p.id = rp.product_id AND rp.repo_id = $1
+		WHERE rp.repo_id IS NULL
+		AND ($2 = '' OR LOWER(p.prod_name) LIKE LOWER($2))
+		ORDER BY p.prod_name
+		LIMIT 10 OFFSET $3;
+		`
+
+	results, err := p.conn.Query(context.Background(), sql, repoId, "%"+term+"%", offset)
 	if err != nil {
 		return nil, err
 	}
+	defer results.Close()
 
-	return *products, nil
+	return p.convertRowsToRepoProduct(results)
 }
+
+func (p *postgresManager) getAllProducts(term string, offset int64) (*[]Product, error) {
+	sql := `
+		SELECT prod_name, url, price, id
+		FROM products
+		WHERE ($1 = '' OR LOWER(prod_name) LIKE LOWER($1))
+		ORDER BY prod_name
+		LIMIT 10 OFFSET $2;
+		`
+
+	results, err := p.conn.Query(context.Background(), sql, "%"+term+"%", offset)
+	if err != nil {
+		return nil, err
+	}
+	defer results.Close()
+
+	return p.convertRowsToRepoProduct(results)
+}
+
+// func (p *postgresManager) GetAllProductsForRepo(repoId int64, term, option string, page int64) ([]Product, error) {
+// 	offset := (page - 1) * 10
+
+// 	sql := ""
+// 	if option == "selected" {
+// 		sql = `
+// 		SELECT prod_name, url, price, id
+// 		FROM products
+// 		WHERE products.id IN (select product_id from repo_products where repo_id = $1)`
+
+// 		if term != "" {
+// 			sql += `
+// 		AND LOWER(prod_name) LIKE LOWER($3)`
+// 		}
+
+// 		sql += `
+// 		ORDER BY prod_name
+// 		LIMIT 10 OFFSET $2;
+// 		`
+// 	} else if option == "unselected" {
+// 		sql = `
+// 		SELECT prod_name, url, price, id
+// 		FROM products
+// 		WHERE products.id NOT IN (select product_id from repo_products where repo_id = $1)`
+
+// 		if term != "" {
+// 			sql += `
+// 		AND LOWER(prod_name) LIKE LOWER($3)`
+// 		}
+
+// 		sql += `
+// 		ORDER BY prod_name
+// 		LIMIT 10 OFFSET $2;
+// 		`
+// 	} else {
+// 		sql = `
+// 		SELECT prod_name, url, price, id
+// 		FROM products`
+
+// 		if term != "" {
+// 			sql += `
+// 		WHERE LOWER(prod_name) LIKE LOWER($2)`
+// 		}
+
+// 		sql += `
+// 		ORDER BY prod_name
+// 		LIMIT 10 OFFSET $1;
+// 		`
+// 	}
+
+// 	if term != "" {
+// 		termLike := "%" + term + "%"
+// 		if option == "all" {
+// 			results, err := p.conn.Query(context.Background(), sql, offset, termLike)
+
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			defer results.Close()
+
+// 			products, err := p.convertRowsToRepoProduct(results)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+
+// 			return *products, nil
+// 		}
+
+// 		results, err := p.conn.Query(context.Background(), sql, repoId, offset, termLike)
+
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		defer results.Close()
+
+// 		products, err := p.convertRowsToRepoProduct(results)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		return *products, nil
+// 	}
+
+// 	if option == "all" {
+// 		results, err := p.conn.Query(context.Background(), sql, offset)
+
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		defer results.Close()
+
+// 		products, err := p.convertRowsToRepoProduct(results)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		return *products, nil
+// 	}
+
+// 	results, err := p.conn.Query(context.Background(), sql, repoId, offset)
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer results.Close()
+
+// 	products, err := p.convertRowsToRepoProduct(results)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return *products, nil
+// }
 
 func (p *postgresManager) convertRowsToProduct(results pgx.Rows) (*[]Product, error) {
 	// check if there is any
@@ -212,50 +377,44 @@ func (p *postgresManager) convertRowsToProduct(results pgx.Rows) (*[]Product, er
 	return &products, nil
 }
 
-func (p *postgresManager) convertRowsToRepoProduct(results pgx.Rows) (*[]RepoProduct, error) {
+func (p *postgresManager) convertRowsToRepoProduct(results pgx.Rows) (*[]Product, error) {
 	// check if there is any
-	products := []RepoProduct{}
+	products := []Product{}
 	for results.Next() {
 		anySlice, err := results.Values()
 		if err != nil {
 			return nil, err
 		}
 
-		if len(anySlice) != 5 {
+		if len(anySlice) != 4 {
 			return nil, fmt.Errorf("invalid row structure returned")
 		}
 
-		isAdded, ok := anySlice[0].(bool)
-		if !ok {
-			return nil, fmt.Errorf("invalid row structure returned, on first column")
-		}
-
-		name, ok := anySlice[1].(string)
+		name, ok := anySlice[0].(string)
 		if !ok {
 			return nil, fmt.Errorf("invalid row structure returned, on second column")
 		}
 
-		url, ok := anySlice[2].(string)
+		url, ok := anySlice[1].(string)
 		if !ok {
 			return nil, fmt.Errorf("invalid row structure returned, on third column")
 		}
 
-		price, ok := anySlice[3].(int64)
+		price, ok := anySlice[2].(int64)
 		if !ok {
 			return nil, fmt.Errorf("invalid row structure returned, on fourth column")
 		}
 
-		id, ok := anySlice[4].(int64)
+		id, ok := anySlice[3].(int64)
 		if !ok {
 			return nil, fmt.Errorf("invalid row structure returned, on 5th column")
 		}
 
-		products = append(products, RepoProduct{
-			Id:      id,
-			IsAdded: isAdded,
-			Name:    name,
-			URL:     url,
-			Price:   price,
+		products = append(products, Product{
+			Id:    id,
+			Name:  name,
+			URL:   url,
+			Price: price,
 		})
 
 	}

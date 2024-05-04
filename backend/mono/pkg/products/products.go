@@ -10,7 +10,7 @@ import (
 
 type ProductsManager interface {
 	GetAllProducts() ([]db.Product, error)
-	GetRepoProducts(repoId int64) ([]db.RepoProduct, error)
+	GetRepoProducts(repoId int64, term, option string, page int64) ([]db.Product, error)
 	GetProductNameAndPrice(productId int64) (string, int64, error)
 	AddProductToRepo(productName string, userId, productId, repoId, price int64) error
 	GetReposOptions(id int64) ([]db.RepoOption, error)
@@ -38,8 +38,8 @@ func (p *productsManager) GetAllProducts() ([]db.Product, error) {
 	return p.dbManager.GetAllProducts()
 }
 
-func (p *productsManager) GetRepoProducts(repoId int64) ([]db.RepoProduct, error) {
-	return p.dbManager.GetAllProductsForRepo(repoId)
+func (p *productsManager) GetRepoProducts(repoId int64, term, option string, page int64) ([]db.Product, error) {
+	return p.dbManager.GetAllProductsForRepo(repoId, term, option, page)
 }
 
 func (p *productsManager) AddProductToRepo(productName string, userId, productId, repoId, price int64) error {

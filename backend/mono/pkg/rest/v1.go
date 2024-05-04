@@ -291,7 +291,22 @@ func addProducts(router fiber.Router, productManager products.ProductsManager, a
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
-		products, err := productManager.GetRepoProducts(id)
+		pageNum := c.Query("page")
+		pageNumInt, err := strconv.ParseInt(pageNum, 10, 64)
+		if err != nil || pageNumInt < 1 {
+			pageNumInt = 1
+		}
+
+		term := c.Query("term")
+		option := c.Query("option")
+
+		if option != "selected" && option != "unselected" && option != "all" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": "'option' can only be: selected, unselected, or all",
+			})
+		}
+
+		products, err := productManager.GetRepoProducts(id, term, option, pageNumInt)
 		if err != nil {
 			log.Error().Int64("repoId", id).Err(err).Msg("failed to get all products")
 			return c.SendStatus(fiber.StatusInternalServerError)
