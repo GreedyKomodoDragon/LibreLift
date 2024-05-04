@@ -1,30 +1,70 @@
 /* eslint-disable react/jsx-key */
 "use client";
 
-import LoadingSpinner from "@/components/LoadingSpinner";
 import ProductGroupButton from "@/components/profile/ProductGroupButton";
 import WarningMessage from "@/components/profile/WarningMessage";
+import ProductSearchBar from "@/components/profile/repositories/ProductSearchBar";
 import ResourcePriceBox from "@/components/resourcePriceBox";
-import Searchbar from "@/components/searchbar";
+import { debounce } from "@/lib/utils";
 import { GetRepoMetaData } from "@/rest/github";
 import {
   RepoProduct,
   addProductToRepo,
   getRepoProducts,
 } from "@/rest/products";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import {
+  InfiniteData,
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { ThreeDots } from "react-loader-spinner";
 
 export default function Page({ params }: { params: { id: string } }) {
   const [option, setOption] = useState<string>("selected");
+  const [term, setTerm] = useState<string>("");
 
   const queryClient = useQueryClient();
 
-  const { data, isPending, error } = useQuery({
-    refetchInterval: 0,
-    queryKey: ["repo-products", params.id],
-    queryFn: () => getRepoProducts(params.id),
-  });
+  const { data, fetchNextPage, isFetching, isFetchingNextPage, error } =
+    useInfiniteQuery({
+      queryKey: ["repo-products", params.id, option, term],
+      queryFn: ({ pageParam }) =>
+        getRepoProducts(params.id, term, option, pageParam),
+      initialPageParam: 1,
+      getNextPageParam: (lastPage, pages) => {
+        if (lastPage.length === 0) {
+          return null;
+        }
+
+        return pages.length + 1;
+      },
+    });
+
+  const debouncedSetTerms = debounce((term: string) => {
+    setTerm(term);
+  }, 1000);
+
+  useEffect(() => {
+    // Event listener to check scroll position
+    const handleScroll = () => {
+      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight;
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const bottomOffset = documentHeight - (windowHeight + scrollTop);
+
+      // Load more items when user reaches the bottom 10px of the page
+      if (bottomOffset < 10 && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [stop, isFetchingNextPage]);
 
   const meta = useQuery({
     refetchInterval: 0,
@@ -32,80 +72,27 @@ export default function Page({ params }: { params: { id: string } }) {
     queryFn: () => GetRepoMetaData(Number(params.id)),
   });
 
+  const convertItems = (
+    data: InfiniteData<RepoProduct[], unknown> | undefined
+  ) => {
+    if (data === undefined || data.pages.length === 0) {
+      return [];
+    }
+
+    const items: RepoProduct[] = [];
+    for (let index = 0; index < data.pages.length; index++) {
+      items.push(...data.pages[index]);
+    }
+
+    return items;
+  };
+
   const showProducts = (data: RepoProduct[] | undefined) => {
     switch (option) {
       case "selected":
         return (
           <>
-            {isPending && (
-              <div className="flex flex-wrap justify-center">
-                <LoadingSpinner size={16} />
-              </div>
-            )}
-            {!isPending && !error && data && (
-              <div className="flex flex-wrap">
-                {data
-                  .filter((d) => d.isAdded)
-                  .map((d) => (
-                    <div className="sm:w-1/3">
-                      <ResourcePriceBox
-                        title={d.name}
-                        pricing={`$${d.price / 100} per Month`}
-                        url={d.url}
-                      />
-                    </div>
-                  ))}
-              </div>
-            )}
-          </>
-        );
-      case "unselected":
-        return (
-          <>
-            {isPending && (
-              <div className="flex flex-wrap justify-center">
-                <LoadingSpinner size={16} />
-              </div>
-            )}
-            {!isPending && !error && data && (
-              <div className="flex flex-wrap">
-                {data
-                  .filter((d) => !d.isAdded)
-                  .map((d) => (
-                    <div key={d.id} className="sm:w-1/3">
-                      <ResourcePriceBox
-                        title={d.name}
-                        pricing={`$${d.price / 100} per Month`}
-                        url={d.url}
-                        option={true}
-                        added={d.isAdded}
-                        disabled={meta.data?.revokedPending}
-                        onAddClick={async () => {
-                          try {
-                            await addProductToRepo(d.id, Number(params.id));
-                            await queryClient.invalidateQueries({
-                              queryKey: ["repo-products", params.id],
-                            });
-                          } catch (error) {
-                            console.error(error);
-                          }
-                        }}
-                      />
-                    </div>
-                  ))}
-              </div>
-            )}
-          </>
-        );
-      case "all":
-        return (
-          <>
-            {isPending && (
-              <div className="flex flex-wrap justify-center">
-                <LoadingSpinner size={16} />
-              </div>
-            )}
-            {!isPending && !error && data && (
+            {data && (
               <div className="flex flex-wrap">
                 {data.map((d) => (
                   <div className="sm:w-1/3">
@@ -116,6 +103,76 @@ export default function Page({ params }: { params: { id: string } }) {
                     />
                   </div>
                 ))}
+              </div>
+            )}
+          </>
+        );
+      case "unselected":
+        return (
+          <>
+            {data && (
+              <div className="flex flex-wrap">
+                {data.map((d) => (
+                  <div key={d.id} className="sm:w-1/3">
+                    <ResourcePriceBox
+                      title={d.name}
+                      pricing={`$${d.price / 100} per Month`}
+                      url={d.url}
+                      option={true}
+                      added={d.isAdded}
+                      disabled={meta.data?.revokedPending}
+                      onAddClick={async () => {
+                        try {
+                          await addProductToRepo(d.id, Number(params.id));
+                          await queryClient.invalidateQueries({
+                            queryKey: [
+                              "repo-products",
+                              params.id,
+                              option,
+                              term,
+                            ],
+                          });
+                          await queryClient.invalidateQueries({
+                            queryKey: [
+                              "repo-products",
+                              params.id,
+                              "selected",
+                              term,
+                            ],
+                          });
+                        } catch (error) {
+                          console.error(error);
+                        }
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        );
+      case "all":
+        return (
+          <>
+            {data && (
+              <div className="flex flex-wrap">
+                {data
+                  .filter((d) => {
+                    if (term.length > 0) {
+                      return d.name.toLowerCase().includes(term.toLowerCase());
+                    }
+
+                    return true;
+                  })
+                  .map((d) => (
+                    <div className="sm:w-1/3">
+                      <ResourcePriceBox
+                        title={d.name}
+                        pricing={`$${d.price / 100} per Month`}
+                        url={d.url}
+                      />
+                    </div>
+                  ))}
               </div>
             )}
           </>
@@ -136,7 +193,7 @@ export default function Page({ params }: { params: { id: string } }) {
         </h1>
         <h1 className="text-2xl ml-4">Repo: {params.id}</h1>
       </div>
-      <Searchbar />
+      <ProductSearchBar setTerm={debouncedSetTerms} />
       <div className="float-right mr-8">
         <ProductGroupButton
           onChange={(value: string) => {
@@ -145,7 +202,22 @@ export default function Page({ params }: { params: { id: string } }) {
         />
       </div>
       <br />
-      <div className="p-4">{showProducts(data)}</div>
+      <div className="p-4">
+        {/* TODO: Add an error message in here */}
+        {showProducts(convertItems(data))}
+        <div className="flex justify-center w-full">
+          <ThreeDots
+            visible={isFetching}
+            height="80"
+            width="80"
+            color="#4fa94d"
+            radius="9"
+            ariaLabel="three-dots-loading"
+            wrapperStyle={{}}
+            wrapperClass=""
+          />
+        </div>
+      </div>
     </div>
   );
 }

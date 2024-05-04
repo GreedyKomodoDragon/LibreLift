@@ -63,7 +63,7 @@ export default function RepoRow(props: RepoRow) {
                 <>
                   <Link
                     href={`/profile/repositories/${props.id}/products`}
-                    className="mr-2 inline-flex items-center bg-blue-900 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
+                    className="mr-2 inline-flex items-center bg-violet-900 hover:bg-violet-700 text-white py-2 px-4 rounded-lg"
                   >
                     Product List
                     <img
@@ -75,7 +75,7 @@ export default function RepoRow(props: RepoRow) {
                   </Link>
                   <Link
                     href={`/profile/repositories/${props.id}/dashboard`}
-                    className="inline-flex items-center bg-blue-900 hover:bg-blue-700 text-white py-2 px-4 rounded-lg"
+                    className="inline-flex items-center bg-violet-900 hover:bg-violet-700 text-white py-2 px-4 rounded-lg"
                   >
                     To Dashboard
                     <img

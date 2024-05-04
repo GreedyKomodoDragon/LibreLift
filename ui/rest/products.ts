@@ -23,13 +23,23 @@ export async function getAllProducts(): Promise<Product[]> {
   return result.data.products;
 }
 
-export async function getRepoProducts(repoId: string): Promise<RepoProduct[]> {
-  const result = await axios.get(
-    `http://127.0.0.1:8080/api/v1/products/repo/${repoId}`,
-    {
-      withCredentials: true,
-    }
-  );
+export async function getRepoProducts(
+  repoId: string,
+  term: string,
+  option: string,
+  page: number
+): Promise<RepoProduct[]> {
+  let url = `http://127.0.0.1:8080/api/v1/products/repo/${repoId}?option=${encodeURIComponent(
+    option
+  )}&page=${encodeURIComponent(page)}`;
+
+  if (term.length > 0) {
+    url += `&term=${encodeURIComponent(term)}`;
+  }
+
+  const result = await axios.get(url, {
+    withCredentials: true,
+  });
 
   return result.data.products;
 }
