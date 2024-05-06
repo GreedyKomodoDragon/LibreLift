@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"librelift/pkg/db"
+	"net/http"
 
 	"github.com/google/go-github/v60/github"
 	"golang.org/x/oauth2"
@@ -13,7 +14,7 @@ type ProjectManager interface {
 	GetProjectsMetaData(string, int) ([]ProjectMetaData, error)
 	GetProjectMetaDataUsingSearch(string, string, int) ([]ProjectMetaData, error)
 	AddingRepo(id int64, token string) error
-	GetProjectMetaData(id int64) (*BasicRepoMetaData, error)
+	GetProjectMetaData(id int64, token string) (*BasicRepoMetaData, error)
 	IsOpenSource(license string) bool
 }
 
@@ -270,7 +271,7 @@ func (p *projectManager) AddingRepo(id int64, token string) error {
 
 	repo, _, err := client.Repositories.GetByID(context.Background(), id)
 	if err != nil {
-		return fmt.Errorf("Error fetching repository: %v", id)
+		return err
 	}
 
 	user, _, err := client.Users.Get(context.Background(), "")
@@ -285,12 +286,19 @@ func (p *projectManager) AddingRepo(id int64, token string) error {
 	return p.repoDB.AddRepo(*repo.Owner.ID, *repo.ID)
 }
 
-func (p *projectManager) GetProjectMetaData(id int64) (*BasicRepoMetaData, error) {
-	client := github.NewClient(nil)
+func (p *projectManager) GetProjectMetaData(id int64, token string) (*BasicRepoMetaData, error) {
+	var httpClient *http.Client
+	if token != "" {
+		httpClient = oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: token},
+		))
+	}
+
+	client := github.NewClient(httpClient)
 
 	repo, _, err := client.Repositories.GetByID(context.Background(), id)
 	if err != nil {
-		return nil, fmt.Errorf("Error fetching repository: %v", id)
+		return nil, err
 	}
 
 	revoked, err := p.repoDB.IsRepoOwnedByRevokePendingUser(id)
