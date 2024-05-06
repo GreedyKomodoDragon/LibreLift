@@ -199,10 +199,9 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager, sea
 			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
-		token := c.Cookies("librelift-token")
-
-		project, err := projectManager.GetProjectMetaData(id, token)
+		project, err := projectManager.GetProjectMetaData(id)
 		if err != nil {
+			log.Error().Err(err).Msg("failed to get project metadata")
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
@@ -242,7 +241,7 @@ func addProject(router fiber.Router, projectManager projects.ProjectManager, sea
 			return c.SendStatus(fiber.StatusUnauthorized)
 		}
 
-		repo, err := projectManager.GetProjectMetaData(id, token)
+		repo, err := projectManager.GetProjectMetaData(id)
 		if err != nil {
 			// TODO: Return code based on error
 			log.Error().Err(err).Msg("could not get project information")

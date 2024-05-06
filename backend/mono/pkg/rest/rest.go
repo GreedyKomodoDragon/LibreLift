@@ -27,7 +27,9 @@ func NewFiberHttpServer(authManager auth.AuthManager, projectManager projects.Pr
 	}))
 
 	app.Use(func(c *fiber.Ctx) error {
-		if strings.HasSuffix(c.Path(), "/login") || strings.HasSuffix(c.Path(), "/webhook") || strings.Contains(c.Path(), "/email") {
+		if strings.HasSuffix(c.Path(), "/login") || strings.HasSuffix(c.Path(), "/webhook") ||
+			strings.Contains(c.Path(), "/email") || strings.Contains(c.Path(), "/search") ||
+			strings.HasSuffix(c.Path(), "/added") || (strings.Contains(c.Path(), "/project/repos/") && c.Method() == "GET") {
 			return c.Next()
 		}
 
