@@ -13,7 +13,7 @@ import {
 import { useEffect, useState } from "react";
 
 /* eslint-disable react/jsx-key */
-export default function Repostories() {
+export default function Repositories() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState<string>("");
 
@@ -79,14 +79,13 @@ export default function Repostories() {
       <div className="ml-8 font-semibold whitespace-nowrap tracking-tight text-4xl flex items-center">
         <h3>Your Repositories</h3>
       </div>
-
       <div className="container mx-auto py-8">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center">
+          <div className="flex items-center flex-grow sm:flex-grow-0">
             <input
               type="text"
-              placeholder="Search Your Repostories..."
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 w-80"
+              placeholder="Search Your Repositories..."
+              className="flex-grow px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               onChange={handleInputChange}
             />
           </div>
@@ -96,20 +95,21 @@ export default function Repostories() {
                 queryKey: ["repoData", searchTerm],
               });
             }}
-            className="ml-2 bg-violet-900 text-white text-l p-1 px-2 rounded-md"
-            style={{ display: "flex", alignItems: "center" }}
+            className="ml-2 bg-violet-900 text-white text-l p-1 px-2 rounded-md flex items-center"
           >
-            <span className="pr-2">Refresh</span>
+            <span className="pr-2 hidden sm:inline">Refresh</span>
             <svg
-              width="40"
-              height="40"
+              width="20"
+              height="20"
               viewBox="-1.5 -2.5 24 24"
               xmlns="http://www.w3.org/2000/svg"
               preserveAspectRatio="xMinYMin"
-              style={{ verticalAlign: "middle" }}
-              className={`w-10 h-10 ${isFetching ? "animate-spin" : ""}`}
+              className={`w-8 h-8 ${isFetching ? "animate-spin" : ""}`}
             >
-              <path fill="#FFFFFF" d="m17.83 4.194.42-1.377a1 1 0 1 1 1.913.585l-1.17 3.825a1 1 0 0 1-1.248.664l-3.825-1.17a1 1 0 1 1 .585-1.912l1.672.511A7.381 7.381 0 0 0 3.185 6.584l-.26.633a1 1 0 1 1-1.85-.758l.26-.633A9.381 9.381 0 0 1 17.83 4.194M2.308 14.807l-.327 1.311a1 1 0 1 1-1.94-.484l.967-3.88a1 1 0 0 1 1.265-.716l3.828.954a1 1 0 0 1-.484 1.941l-1.786-.445a7.384 7.384 0 0 0 13.216-1.792 1 1 0 1 1 1.906.608 9.38 9.38 0 0 1-5.38 5.831 9.386 9.386 0 0 1-11.265-3.328" />
+              <path
+                fill="#FFFFFF"
+                d="m17.83 4.194.42-1.377a1 1 0 1 1 1.913.585l-1.17 3.825a1 1 0 0 1-1.248.664l-3.825-1.17a1 1 0 1 1 .585-1.912l1.672.511A7.381 7.381 0 0 0 3.185 6.584l-.26.633a1 1 0 1 1-1.85-.758l.26-.633A9.381 9.381 0 0 1 17.83 4.194M2.308 14.807l-.327 1.311a1 1 0 1 1-1.94-.484l.967-3.88a1 1 0 0 1 1.265-.716l3.828.954a1 1 0 0 1-.484 1.941l-1.786-.445a7.384 7.384 0 0 0 13.216-1.792 1 1 0 1 1 1.906.608 9.38 9.38 0 0 1-5.38 5.831 9.386 9.386 0 0 1-11.265-3.328"
+              />
             </svg>
           </button>
         </div>

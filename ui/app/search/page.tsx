@@ -1,6 +1,7 @@
 "use client";
 
 import SearchRow from "@/components/SearchRow";
+import PageSearchBar from "@/components/pageSearchBar";
 import Searchbar from "@/components/searchbar";
 import { Document, SearchProjects } from "@/rest/search";
 import { InfiniteData, useInfiniteQuery } from "@tanstack/react-query";
@@ -64,26 +65,8 @@ export default function Search() {
 
   return (
     <div className="container mx-auto py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <Searchbar />
-        </div>
-
-        <div className="flex items-center">
-          <label className="ml-4 mr-2">Sort By:</label>
-          <select
-            id="sort"
-            className="px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="name">Name</option>
-            <option value="stars">Stars</option>
-            <option value="updated">Updated</option>
-          </select>
-        </div>
-      </div>
-
-      <h1 className="text-2xl my-4">Searching for: {search}</h1>
-
+      <PageSearchBar />
+      <h1 className="text-xl my-4">Searching for: {search}</h1>
       <div className="flex flex-wrap justify-between w-full">
         {convertItems(data).map((d) => (
           // eslint-disable-next-line react/jsx-key

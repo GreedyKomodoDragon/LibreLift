@@ -51,7 +51,9 @@ export default function Page({ params }: { params: { id: string } }) {
         )}
         {!metaLoading && meta && (
           <>
-            <h1 className="text-4xl">{meta.name}</h1>
+            <h1 className="text-2xl sm:text-4xl md:text-4xl lg:text-4xl xl:text-5xl">
+              {meta.name}
+            </h1>
             <p className="text-lg ml-4 mt-2">
               Description: {meta.description || "No Description"}
             </p>
@@ -60,7 +62,6 @@ export default function Page({ params }: { params: { id: string } }) {
       </div>
       <div className="p-4">
         <h2 className="text-2xl ml-4">Donation Options</h2>
-
         {repoOptionsLoading && (
           <div className="flex justify-center">
             <ThreeDots
@@ -81,7 +82,7 @@ export default function Page({ params }: { params: { id: string } }) {
             )}
             <div className="flex flex-wrap">
               {repoOptions.map((option, i) => (
-                <div key={i} className="sm:w-1/3">
+                <div key={i} className="sm:w-1/2 lg:w-1/3 w-full">
                   <ResourcePurchaseBox
                     title={option.name}
                     pricing={`$${option.price / 100} (per Month)`}

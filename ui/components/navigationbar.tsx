@@ -70,17 +70,17 @@ export default function NavigationBar() {
   return (
     <nav className="bg-violet-950 w-full px-4 py-2 top-0">
       <div
-        className="mx-auto flex flex-col md:flex-row items-center justify-between"
+        className="mx-auto flex flex-col sm:flex-row items-center justify-between"
         style={{
           maxWidth: "1000px",
         }}
       >
-        <div className="flex items-center space-x-4 mb-4 md:mb-0">
+        <div className="flex items-center space-x-4 mb-4 sm:mb-0">
           <Link className="text-[#f8f9fa] text-lg font-semibold" href="/">
             LibreLift
           </Link>
         </div>
-        <div className="flex items-center justify-center w-full md:w-auto">
+        <div className="flex items-center justify-center w-full sm:w-auto">
           <form onSubmit={goSearch} className="flex items-center">
             <input
               type="text"

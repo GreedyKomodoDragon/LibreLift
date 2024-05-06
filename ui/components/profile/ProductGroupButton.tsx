@@ -26,18 +26,10 @@ export default function ProductGroupButton(props: ProductGroupButtonProps) {
       <button
         className={`${
           option === "unselected" ? "bg-gray-800" : "bg-gray-500"
-        } hover:bg-gray-600 text-white font-bold py-2 px-4 focus:outline-none focus:shadow-outline`}
+        } hover:bg-gray-600 text-white font-bold py-2 px-4 focus:outline-none focus:shadow-outline rounded-r`}
         onClick={() => setOption("unselected")}
       >
         Unselected
-      </button>
-      <button
-        className={`${
-          option === "all" ? "bg-gray-800" : "bg-gray-500"
-        } hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-r focus:outline-none focus:shadow-outline`}
-        onClick={() => setOption("all")}
-      >
-        All
       </button>
     </div>
   );

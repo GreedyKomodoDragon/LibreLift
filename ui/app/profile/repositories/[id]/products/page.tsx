@@ -95,7 +95,7 @@ export default function Page({ params }: { params: { id: string } }) {
             {data && (
               <div className="flex flex-wrap">
                 {data.map((d) => (
-                  <div className="sm:w-1/3">
+                  <div className="sm:w-1/3 w-full">
                     <ResourcePriceBox
                       title={d.name}
                       pricing={`$${d.price / 100} per Month`}
@@ -113,13 +113,13 @@ export default function Page({ params }: { params: { id: string } }) {
             {data && (
               <div className="flex flex-wrap">
                 {data.map((d) => (
-                  <div key={d.id} className="sm:w-1/3">
+                  <div key={d.id} className="sm:w-1/3 w-full">
                     <ResourcePriceBox
                       title={d.name}
                       pricing={`$${d.price / 100} per Month`}
                       url={d.url}
                       option={true}
-                      added={d.isAdded}
+                      added={false}
                       disabled={meta.data?.revokedPending}
                       onAddClick={async () => {
                         try {
@@ -151,32 +151,6 @@ export default function Page({ params }: { params: { id: string } }) {
             )}
           </>
         );
-      case "all":
-        return (
-          <>
-            {data && (
-              <div className="flex flex-wrap">
-                {data
-                  .filter((d) => {
-                    if (term.length > 0) {
-                      return d.name.toLowerCase().includes(term.toLowerCase());
-                    }
-
-                    return true;
-                  })
-                  .map((d) => (
-                    <div className="sm:w-1/3">
-                      <ResourcePriceBox
-                        title={d.name}
-                        pricing={`$${d.price / 100} per Month`}
-                        url={d.url}
-                      />
-                    </div>
-                  ))}
-              </div>
-            )}
-          </>
-        );
     }
   };
 
@@ -191,7 +165,6 @@ export default function Page({ params }: { params: { id: string } }) {
         <h1 className="text-4xl">
           {!meta.isPending && meta.data && meta.data.name}
         </h1>
-        <h1 className="text-2xl ml-4">Repo: {params.id}</h1>
       </div>
       <ProductSearchBar setTerm={debouncedSetTerms} />
       <div className="float-right mr-8">
