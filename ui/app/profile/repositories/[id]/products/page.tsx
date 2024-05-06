@@ -95,7 +95,7 @@ export default function Page({ params }: { params: { id: string } }) {
             {data && (
               <div className="flex flex-wrap">
                 {data.map((d) => (
-                  <div className="sm:w-1/3 w-full">
+                  <div className="md:w-1/3 sm:w-1/2 w-full">
                     <ResourcePriceBox
                       title={d.name}
                       pricing={`$${d.price / 100} per Month`}
@@ -113,7 +113,7 @@ export default function Page({ params }: { params: { id: string } }) {
             {data && (
               <div className="flex flex-wrap">
                 {data.map((d) => (
-                  <div key={d.id} className="sm:w-1/3 w-full">
+                  <div key={d.id} className="md:w-1/3 sm:w-1/2 w-full">
                     <ResourcePriceBox
                       title={d.name}
                       pricing={`$${d.price / 100} per Month`}
@@ -162,19 +162,20 @@ export default function Page({ params }: { params: { id: string } }) {
         </div>
       )}
       <div className="p-4">
-        <h1 className="text-4xl">
+        <h1 className="md:text-4xl sm:text-3xl text-2xl">
           {!meta.isPending && meta.data && meta.data.name}
         </h1>
       </div>
-      <ProductSearchBar setTerm={debouncedSetTerms} />
-      <div className="float-right mr-8">
+      <div className="flex flex-col items-center">
+        <ProductSearchBar setTerm={debouncedSetTerms} className="mb-4" />
         <ProductGroupButton
           onChange={(value: string) => {
             setOption(value);
           }}
+          className=""
         />
       </div>
-      <br />
+
       <div className="p-4">
         {/* TODO: Add an error message in here */}
         {showProducts(convertItems(data))}

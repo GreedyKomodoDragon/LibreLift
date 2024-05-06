@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 type ProductGroupButtonProps = {
   onChange: (value: string) => void;
+  className: string;
 };
 
 export default function ProductGroupButton(props: ProductGroupButtonProps) {
@@ -14,19 +15,19 @@ export default function ProductGroupButton(props: ProductGroupButtonProps) {
   }, [option]);
 
   return (
-    <div className="flex">
+    <div className={"flex " + props.className}>
       <button
         className={`${
-          option === "selected" ? "bg-gray-800" : "bg-gray-500"
-        } hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-l focus:outline-none focus:shadow-outline`}
+          option === "selected" ? "bg-violet-800" : "bg-violet-500"
+        } hover:bg-violet-600 text-white font-bold py-2 px-4 rounded-l focus:outline-none focus:shadow-outline`}
         onClick={() => setOption("selected")}
       >
         Selected
       </button>
       <button
         className={`${
-          option === "unselected" ? "bg-gray-800" : "bg-gray-500"
-        } hover:bg-gray-600 text-white font-bold py-2 px-4 focus:outline-none focus:shadow-outline rounded-r`}
+          option === "unselected" ? "bg-violet-800" : "bg-violet-500"
+        } hover:bg-violet-600 text-white font-bold py-2 px-4 focus:outline-none focus:shadow-outline rounded-r`}
         onClick={() => setOption("unselected")}
       >
         Unselected

@@ -4,11 +4,12 @@ import { Dispatch, SetStateAction } from "react";
 
 interface ProductSearchBarProps {
   setTerm: Dispatch<SetStateAction<string>>;
+  className: string;
 }
 
 export default function ProductSearchBar(props: ProductSearchBarProps) {
   return (
-    <div className="flex flex-col items-center">
+    <div className={"flex flex-col items-center " + props.className}>
       <div className="relative">
         <div>
           <input

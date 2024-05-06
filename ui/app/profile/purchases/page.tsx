@@ -177,7 +177,7 @@ const PurchasesPage: React.FC = () => {
       <h1 className="text-3xl font-semibold mb-8">My Purchases</h1>
       <div className="mb-4">
         <button
-          className={`mr-4 px-4 py-2 rounded-lg ${
+          className={`mr-2 px-4 py-2 rounded-lg ${
             filter === "all" ? "bg-violet-950 text-white" : "bg-gray-200"
           }`}
           onClick={() => setFilter("all")}
@@ -185,12 +185,12 @@ const PurchasesPage: React.FC = () => {
           All
         </button>
         <button
-          className={`mr-4 px-4 py-2 rounded-lg ${
+          className={`mr-2 px-4 py-2 rounded-lg ${
             filter === "one-off" ? "bg-violet-950 text-white" : "bg-gray-200"
           }`}
           onClick={() => setFilter("one-off")}
         >
-          One-off Payments
+          One-off
         </button>
         <button
           className={`px-4 py-2 rounded-lg ${

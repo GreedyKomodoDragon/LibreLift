@@ -16,36 +16,40 @@ type ResourcePriceBoxProps = {
 };
 
 export default function ResourcePriceBox(props: ResourcePriceBoxProps) {
-
   return (
     <div className="w-full p-4 zoom transition-transform duration-200 transform hover:scale-[1.01]">
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-center items-center">
+      <div className="bg-white rounded-lg shadow-md p-6 flex flex-col sm:flex-row items-center">
+        <div className="flex justify-center items-center mr-0 sm:mr-6 mb-4 sm:mb-0">
           <img src={props.url} alt="icon" />
         </div>
-        <h3 className="text-lg font-semibold mb-2">{props.title}</h3>
-        <p className="text-gray-600">
-          {props.pricing}{" "}
-          {props.option && !props.added && (
-            <div className="float-right inline-flex items-center">
-              <LoadingButton
-                buttonColor={"gray"}
-                message={"Add as Option"}
-                onClick={props.onAddClick}
-                disabled={props.disabled}
-              />
-            </div>
-          )}
-          {props.option && props.added && (
-            <button
-              className="float-right inline-flex items-center bg-gray-900 hover:bg-gray-700 text-white py-2 px-4 rounded-lg mr-1"
-              onClick={props.onRemoveClick}
-              disabled={props.disabled !== undefined && props.disabled}
-            >
-              Remove Option
-            </button>
-          )}
-        </p>
+        <div className="flex-grow">
+          <h3 className="text-lg font-semibold mb-2">{props.title}</h3>
+          <p className="text-gray-600 relative">
+            {props.pricing}{" "}
+            {props.option && (
+              <>
+                {props.added ? (
+                  <button
+                    className="inline-flex items-center bg-gray-900 hover:bg-gray-700 text-white py-2 px-4 rounded-lg mb-2 sm:mb-0"
+                    onClick={props.onRemoveClick}
+                    disabled={props.disabled !== undefined && props.disabled}
+                  >
+                    Remove Option
+                  </button>
+                ) : (
+                  <div className="mt-4">
+                    <LoadingButton
+                      buttonColor={"gray"}
+                      message={"Add as Option"}
+                      onClick={props.onAddClick}
+                      disabled={props.disabled}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </p>
+        </div>
       </div>
     </div>
   );

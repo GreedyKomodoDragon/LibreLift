@@ -31,7 +31,7 @@ const LoadingButton: React.FC<LoadingButtonProps> = ({
   };
 
   return (
-    <div>
+    <div className="w-full">
       <button
         onClick={handleClick}
         className={`flex items-center bg-${buttonColor}-800 hover:bg-${buttonColor}-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:bg-gray-700`}
