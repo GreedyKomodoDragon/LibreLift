@@ -30,14 +30,7 @@ export default function settings() {
 
       {/* Content */}
       <div className="flex-1 px-4 md:px-6 py-6">
-        <Link href="/profile/settings/profile">
-          <div className="container py-4">
-            <h1 className="text-2xl font-semibold">Profile</h1>
-            <p className="text-gray-500 dark:text-gray-400">
-              Remove your profile
-            </p>
-          </div>
-        </Link>
+        <Profile />
       </div>
     </div>
   );

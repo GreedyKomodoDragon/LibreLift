@@ -12,6 +12,7 @@ import {
   addProductToRepo,
   getRepoProducts,
 } from "@/rest/products";
+import { useStore } from "@/store/store";
 import {
   InfiniteData,
   useInfiniteQuery,
@@ -24,6 +25,7 @@ import { ThreeDots } from "react-loader-spinner";
 export default function Page({ params }: { params: { id: string } }) {
   const [option, setOption] = useState<string>("selected");
   const [term, setTerm] = useState<string>("");
+  const updateError = useStore((state) => state.updateError);
 
   const queryClient = useQueryClient();
 
@@ -72,6 +74,18 @@ export default function Page({ params }: { params: { id: string } }) {
     queryFn: () => GetRepoMetaData(Number(params.id)),
   });
 
+  useEffect(() => {
+    if (meta.error) {
+      updateError("failed to get repo information, try again later");
+    }
+  }, [meta.error, updateError]);
+
+  useEffect(() => {
+    if (error) {
+      updateError("failed to get repo products, try again later");
+    }
+  }, [error, updateError]);
+
   const convertItems = (
     data: InfiniteData<RepoProduct[], unknown> | undefined
   ) => {
@@ -92,10 +106,10 @@ export default function Page({ params }: { params: { id: string } }) {
       case "selected":
         return (
           <>
-            {data && (
+            {data && data.length > 0 && (
               <div className="flex flex-wrap">
                 {data.map((d) => (
-                  <div className="md:w-1/3 sm:w-1/2 w-full">
+                  <div className="md:w-1/3 sm:w-1/2 w-full" key={d.id}>
                     <ResourcePriceBox
                       title={d.name}
                       pricing={`$${d.price / 100} per Month`}
@@ -103,6 +117,13 @@ export default function Page({ params }: { params: { id: string } }) {
                     />
                   </div>
                 ))}
+              </div>
+            )}
+            {!(data && data.length > 0) && !isFetching && (
+              <div className="flex items-center justify-center w-full h-40">
+                <p className="text-gray-600 text-2xl">
+                  No products found. Start adding products to receive donations!
+                </p>
               </div>
             )}
           </>
