@@ -1,6 +1,5 @@
 "use client";
 
-import Profile from "@/components/profile/settings/profile";
 import Link from "next/link";
 
 export default function settings() {

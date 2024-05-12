@@ -39,6 +39,7 @@ const ProjectPage = () => {
                 <ResourcePriceBox
                   title={resource.name}
                   pricing={String(resource.count)}
+                  url={""}
                 />
               ))}
             </div>

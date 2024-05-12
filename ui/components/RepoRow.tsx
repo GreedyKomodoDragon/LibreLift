@@ -70,13 +70,13 @@ export default function RepoRow(props: RepoRow) {
                   >
                     Products
                     <img
-                      src={"/logo.svg"}
+                      src={"/product.svg"}
                       style={{ height: 40, width: 40 }}
                       alt="Github logo"
                       className="ml-2"
                     />
                   </Link>
-                  <Link
+                  {/* <Link
                     href={`/profile/repositories/${props.id}/dashboard`}
                     className="inline-flex items-center bg-violet-900 hover:bg-violet-700 text-white py-2 px-4 rounded-lg"
                   >
@@ -87,7 +87,7 @@ export default function RepoRow(props: RepoRow) {
                       alt="Github logo"
                       className="ml-2"
                     />
-                  </Link>
+                  </Link> */}
                 </>
               )}
               {!isAdded && !isPending && (

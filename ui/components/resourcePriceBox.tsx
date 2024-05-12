@@ -20,7 +20,11 @@ export default function ResourcePriceBox(props: ResourcePriceBoxProps) {
     <div className="w-full p-4 zoom transition-transform duration-200 transform hover:scale-[1.01]">
       <div className="bg-white rounded-lg shadow-md p-6 flex flex-col sm:flex-row items-center">
         <div className="flex justify-center items-center mr-0 sm:mr-6 mb-4 sm:mb-0">
-          <img src={props.url} alt="icon" />
+          <img
+            src={props.url}
+            style={{ width: "100px", height: "100px" }}
+            alt="icon"
+          />
         </div>
         <div className="flex-grow">
           <h3 className="text-lg font-semibold mb-2">{props.title}</h3>
