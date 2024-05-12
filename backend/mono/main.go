@@ -63,6 +63,11 @@ func main() {
 		panic("missing STRIPE_KEY")
 	}
 
+	valkeyAddress := os.Getenv("VALKEY_ADDRESS")
+	if len(stripeKey) == 0 {
+		panic("missing VALKEY_ADDRESS")
+	}
+
 	if os.Getenv("STRIPE_WEBHOOK_KEY") == "" {
 		panic("missing STRIPE_WEBHOOK_KEY")
 	}
@@ -110,7 +115,13 @@ func main() {
 
 	paymentManager := payments.NewStripeManager(stripeKey, refreshURL, returnURL, pg)
 	searchManager := search.NewElasticsearchManager(es, 5)
-	authManager := auth.NewAuthManager(clientID, clientSecret, pg)
+
+	githubCache, err := auth.NewValKeyGithubCache(valkeyAddress)
+	if err != nil {
+		log.Error().Err(err).Msg("could not connect to cache")
+	}
+
+	authManager := auth.NewAuthManager(clientID, clientSecret, pg, githubCache)
 
 	projectManager := projects.NewProjectManager(pg, &openSourcLiences)
 	productManager := products.NewProductManager(pg, paymentManager)

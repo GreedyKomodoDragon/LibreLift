@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/google/go-github/v60/github"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/oauth2"
 )
 
@@ -18,7 +19,7 @@ type AuthManager interface {
 	IsAccountPendingRevoke(id int64) (bool, error)
 	GetAccessToken(code string) (string, error)
 	IsValidAccessToken(token string) (int64, bool, error)
-	GetImageURL(token string) (string, error)
+	GetImageURL(ctx context.Context, token string) (string, error)
 	IsRepoOwner(token string, repoId int64) (bool, error)
 	Logout(token string) error
 }
@@ -27,9 +28,10 @@ type authManager struct {
 	config    oauth2.Config
 	clientID  string
 	dbManager db.DBManager
+	cache     GitHubCacheManager
 }
 
-func NewAuthManager(clientID, clientSecret string, dbManager db.DBManager) AuthManager {
+func NewAuthManager(clientID, clientSecret string, dbManager db.DBManager, githubCache GitHubCacheManager) AuthManager {
 	config := oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
@@ -44,6 +46,7 @@ func NewAuthManager(clientID, clientSecret string, dbManager db.DBManager) AuthM
 		config:    config,
 		clientID:  clientID,
 		dbManager: dbManager,
+		cache:     githubCache,
 	}
 }
 
@@ -78,7 +81,11 @@ func (a *authManager) IsValidAccessToken(token string) (int64, bool, error) {
 	return *user.ID, true, nil
 }
 
-func (a *authManager) GetImageURL(token string) (string, error) {
+func (a *authManager) GetImageURL(ctx context.Context, token string) (string, error) {
+	if url, err := a.cache.GetAvatar(ctx, token); err != nil && len(url) != 0 {
+		return url, nil
+	}
+
 	httpClient := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	))
@@ -91,6 +98,14 @@ func (a *authManager) GetImageURL(token string) (string, error) {
 		}
 
 		return "", err
+	}
+
+	if user.AvatarURL == nil {
+		return "", fmt.Errorf("could not find url")
+	}
+
+	if err := a.cache.SetAvatar(ctx, token, *user.AvatarURL); err != nil {
+		log.Error().Err(err).Msg("could not set cache")
 	}
 
 	return *user.AvatarURL, nil

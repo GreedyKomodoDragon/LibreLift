@@ -101,7 +101,7 @@ func addAuth(router fiber.Router, authManager auth.AuthManager) {
 
 	authRouter.Get("/avatar", func(c *fiber.Ctx) error {
 		token := c.Cookies("librelift-token")
-		url, err := authManager.GetImageURL(token)
+		url, err := authManager.GetImageURL(c.Context(), token)
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
